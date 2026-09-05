@@ -2,17 +2,21 @@ title: Virga Jesse
 composer: Anton Bruckner
 composer_dates: "1824–1896"
 subtitle: WAB 52 (1885)
-text: |
-  Virga Jesse floruit:
-  Virgo Deum et hominem genuit:
-  pacem Deus reddidit,
-  in se reconcilians
-     ima summis.
-  Alleluja.
-translation: |
-  The rod of Jesse hath blossomed:
-  a Virgin hath brought forth God and man:
-  God hath restored peace,
-  reconciling in Himself
-     the lowest with the highest.
-  Alleluia.
+text:
+  stanzas:
+    - lines:
+        - "Virga Jesse floruit:"
+        - "Virgo Deum et hominem genuit:"
+        - pacem Deus reddidit,
+        - in se reconcilians
+        - "   ima summis."
+        - Alleluja.
+translation:
+  stanzas:
+    - lines:
+        - "The rod of Jesse hath blossomed:"
+        - "a Virgin hath brought forth God and man:"
+        - God hath restored peace,
+        - reconciling in Himself
+        - "   the lowest with the highest."
+        - Alleluia.

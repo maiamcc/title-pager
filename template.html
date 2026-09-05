@@ -73,8 +73,21 @@
     text-align: left;
     font-size: 12pt;
     line-height: 1.4;
-    white-space: pre-wrap;
     flex: 1;
+  }
+
+  .stanza + .stanza {
+    margin-top: 1em;
+  }
+
+  .line {
+    margin: 0;
+  }
+
+  .attribution {
+    margin-top: 0.8em;
+    text-align: right;
+    font-style: italic;
   }
 </style>
 </head>
@@ -93,10 +106,25 @@
     <div class="dedication">{{ dedication }}</div>
     {% endif %}
 
+    {% macro text_box(block) %}
+    <div class="text-box">
+      {% for stanza in block.stanzas %}
+      <div class="stanza">
+        {% for line in stanza.lines %}
+        <p class="line">{{ line }}</p>
+        {% endfor %}
+      </div>
+      {% endfor %}
+      {% if block.attribution %}
+      <p class="attribution">— {{ block.attribution }}</p>
+      {% endif %}
+    </div>
+    {% endmacro %}
+
     {% if text or translation %}
     <div class="text-row {% if not (text and translation) %}single{% endif %}">
-      {% if text %}<div class="text-box">{{ text }}</div>{% endif %}
-      {% if translation %}<div class="text-box">{{ translation }}</div>{% endif %}
+      {% if text %}{{ text_box(text) }}{% endif %}
+      {% if translation %}{{ text_box(translation) }}{% endif %}
     </div>
     {% endif %}
   </div>
