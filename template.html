@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<style>
+  @page {
+    size: {{ page_size | default("letter") }};
+    margin: 1in;
+  }
+
+  html, body {
+    height: 100%;
+    margin: 0;
+    padding: 0;
+  }
+
+  body {
+    font-family: "Minion Pro", Palatino, "Palatino Linotype", "Book Antiqua", Georgia, "Times New Roman", serif;
+    color: #000;
+  }
+
+  .page {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: space-evenly;
+    height: 100%;
+    text-align: center;
+  }
+
+  .composer {
+    font-size: 16pt;
+  }
+
+  .title-block {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .title {
+    font-size: 32pt;
+    font-weight: bold;
+    margin: 0;
+  }
+
+  .subtitle {
+    font-size: 16pt;
+    margin-top: 0.4em;
+  }
+
+  .dedication {
+    font-size: 13pt;
+    font-style: italic;
+  }
+
+  .text-row {
+    display: flex;
+    flex-direction: row;
+    justify-content: center;
+    align-items: flex-start;
+    gap: 0.6in;
+    width: 100%;
+  }
+
+  .text-row.single .text-box {
+    max-width: 60%;
+  }
+
+  .text-box {
+    border: 1px solid #000;
+    padding: 0.15in 0.25in;
+    text-align: left;
+    font-size: 12pt;
+    line-height: 1.4;
+    white-space: pre-wrap;
+    flex: 1;
+  }
+</style>
+</head>
+<body>
+  <div class="page">
+    <div class="composer">
+      {{ composer }}{% if composer_dates %} ({{ composer_dates }}){% endif %}
+    </div>
+
+    <div class="title-block">
+      <p class="title">{{ title }}</p>
+      {% if subtitle %}<p class="subtitle">{{ subtitle }}</p>{% endif %}
+    </div>
+
+    {% if dedication %}
+    <div class="dedication">{{ dedication }}</div>
+    {% endif %}
+
+    {% if text or translation %}
+    <div class="text-row {% if not (text and translation) %}single{% endif %}">
+      {% if text %}<div class="text-box">{{ text }}</div>{% endif %}
+      {% if translation %}<div class="text-box">{{ translation }}</div>{% endif %}
+    </div>
+    {% endif %}
+  </div>
+</body>
+</html>
