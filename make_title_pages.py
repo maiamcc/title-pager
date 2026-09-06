@@ -34,6 +34,20 @@ def load_data(yaml_path):
     return data
 
 
+def resolve_output_path(data, cli_output):
+    outfile_name = data.pop("outfile_name", None)
+    if cli_output:
+        if outfile_name:
+            print(
+                f"warning: -o overrides outfile_name ({outfile_name!r}) from the YAML",
+                file=sys.stderr,
+            )
+        return cli_output
+    if outfile_name:
+        return pathlib.Path(outfile_name)
+    return pathlib.Path(f"{slugify(data['title'])}.pdf")
+
+
 def render_pdf(data, output_path):
     env = Environment(loader=FileSystemLoader(str(TEMPLATE_DIR)))
     template = env.get_template(TEMPLATE_NAME)
@@ -48,7 +62,7 @@ def main():
     args = parser.parse_args()
 
     data = load_data(args.yaml_file)
-    output_path = args.output or pathlib.Path(f"{slugify(data['title'])}.pdf")
+    output_path = resolve_output_path(data, args.output)
 
     render_pdf(data, output_path)
     print(f"wrote {output_path}")

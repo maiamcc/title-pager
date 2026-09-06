@@ -46,7 +46,7 @@ one-off assertions — this keeps the suite easy to extend without rewriting
 tests for every small formatting change.
 
 ## TODO
-[] Ability to specify name of output file in YAML
+[x] Ability to specify name of output file in YAML
 	* use key `outfile_name` in YAML to allow for specifying the name of the generated file (same behavior is `-o` when invoking)
 	* a passed `-o` flag overrides the value from the yaml (but displays a warning)
 	* behavior without `-o` and without `outfile_name` is the same--derive output name from title
@@ -73,3 +73,4 @@ tests for every small formatting change.
 * markdown support
 * keep text/translation lines correlated, pretty line spillover
 * keep text/translation boxes same size
+* add marker for "fixtures identical, no need for re-review"
