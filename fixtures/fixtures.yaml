@@ -1,0 +1,134 @@
+# All fixture/test cases live here as one YAML list, since the tool
+# already supports rendering a list of specs. regen_fixtures.py renders
+# each entry to its own PDF (named from its title) plus a combined
+# review deck, with each case's `metadata` field printed on its label
+# page. Each case below exists to exercise something the others don't.
+
+- title: Minimal Example
+  composer: Jane Composer
+  metadata: Bare minimum -- only the required fields, everything optional absent.
+
+- title: Twinkle Twinkle
+  composer: Traditional
+  metadata: >-
+    Single centered box (no translation): multiple stanzas (stanza-gap in
+    the single-box layout), a dedication, and an attribution.
+  dedication: for young stargazers everywhere
+  text:
+    stanzas:
+      - lines:
+          - Twinkle, twinkle, little star,
+          - how I wonder what you are.
+          - Up above the world so high,
+          - like a diamond in the sky.
+          - Twinkle, twinkle, little star,
+          - how I wonder what you are.
+      - lines:
+          - When the blazing sun is set,
+          - and the grass with dew is wet.
+          - Then you show your little light,
+          - twinkle, twinkle all the night.
+          - Twinkle, twinkle, little star,
+          - how I wonder what you are.
+    attribution: W.A. Mozart probably
+
+- title: "A Hymn to the Virgin Mary (O One that Is So Fair and Bright, My Really Long Parenthetical)"
+  composer: Benjamin Britten
+  composer_dates: "1913–1976"
+  metadata: >-
+    Long title (wrapping, replacing the struck Long Lines case) plus a
+    two-part single-centered-box fixture: stanza 1 keeps the original
+    tab-split (\t) + two-space manual-indent convention; stanza 2 is new,
+    with a deliberately long line to exercise wrapping + hanging-indent
+    within the single-box layout (no translation here -- Angelus ad
+    Virginem already covers keeping text and translation in step).
+  text:
+    stanzas:
+      - lines:
+          - "Of one who is so fair and bright"
+          - "  _Velut maris stella,_\t[Like a star of the sea]"
+          - "Brighter than the day is light,"
+          - "  _Parens et puella:_\t[Both mother and maiden]"
+          - "I cry to thee, thou see to me,"
+          - "Lady, pray thy Son for me,"
+          - "  _Tam pia,_\t[so pure]"
+          - "That I may come to thee."
+          - "  _Maria!_\t[Mary]"
+      - lines:
+          - Now let us sing together, both the mighty and the humble, of her whose grace and glory shine so bright that every tongue must strain itself to tell the fullness of her endless praise.
+          - Amen.
+
+- title: Virga Jesse
+  composer: Anton Bruckner
+  metadata: >-
+    Flagship two-column (text + translation) example: full metadata,
+    attribution (boxes end at the same height despite it being one-sided),
+    and the legacy manual-indent convention via literal leading spaces.
+  composer_dates: "1824–1896"
+  subtitle: WAB 52 (1885)
+  dedication: for the dedication of the new Votive Chapel of Linz Cathedral
+  text:
+    stanzas:
+      - lines:
+          - "Virga Jesse floruit:"
+          - "Virgo Deum et hominem genuit:"
+          - pacem Deus reddidit,
+          - in se reconcilians
+          - "   ima summis."
+          - Alleluja.
+        translation_lines:
+          - "The rod of Jesse hath blossomed:"
+          - "a Virgin hath brought forth God and man:"
+          - God hath restored peace,
+          - reconciling in Himself
+          - "   the lowest with the highest."
+          - Alleluia.
+    attribution: Gradual for the Feast of the Immaculate Conception
+
+- title: Angelus ad Virginem
+  composer: Traditional
+  metadata: >-
+    Two-column, multiple stanzas (stanza-gap within the correlated grid,
+    not just a single-box) -- and, since one of its lines is exactly the
+    real case that motivated the margin/gap squeeze behavior, this is also
+    the width-flex calibration case. Markdown formatting folded in here
+    rather than as its own fixture.
+  text:
+    stanzas:
+      - lines:
+          - Ave Maria, gratia plena
+          - Dominus tecum;
+          - Benedicta tu in mulieribus,
+          - et benedictus fructus ventris tui, Jesus.
+          - Sancta Maria, Mater Dei,
+          - ora pro nobis peccatoribus,
+          - nunc et in hora mortis nostrae.
+          - "Amen in bold: **Amen**"
+        translation_lines:
+          - Hail Mary, full of grace,
+          - The Lord is with thee;
+          - Blessed art thou amongst women,
+          - And blessed is the fruit of thy womb, Jesus.
+          - Holy Mary, Mother of God,
+          - Pray for us sinners,
+          - Now and at the hour of our death.
+          - "Amen in bold: **Amen**"
+      - lines:
+          - Angelus Domini nuntiavit Mariae
+          - et concepit de Spiritu sancto.
+        translation_lines:
+          - The angel of God visited Maria
+          - and she *conceived* of the Holy Spirit.
+
+- title: No Box Demo
+  composer: Test Composer
+  metadata: "Two-column, box: false -- confirms the border is omitted on both columns equally."
+  text:
+    box: false
+    stanzas:
+      - lines:
+          - This text has no border box around it.
+          - It should still be positioned and spaced normally.
+        translation_lines:
+          - This translation also has no box, since box now applies to both.
+          - So the two columns match.

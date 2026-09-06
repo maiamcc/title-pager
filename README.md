@@ -39,16 +39,19 @@ Unit tests (fast, no PDF rendering):
 pytest -q
 ```
 
-Visual spot-check — regenerates every fixture in `fixtures/*.yaml` and opens
-a combined review PDF (each case preceded by a label page) in Preview:
+Visual spot-check — regenerates every case in [fixtures/fixtures.yaml](fixtures/fixtures.yaml)
+(one YAML list, each entry a full spec) and opens a combined review PDF
+(each case preceded by a label page) in Preview:
 
 ```bash
 ./regen_fixtures.py
 ```
 
-Add new brittle/common cases as `fixtures/<name>.yaml` rather than writing
+Add new brittle/common cases as entries in that list rather than writing
 one-off assertions — this keeps the suite easy to extend without rewriting
-tests for every small formatting change.
+tests for every small formatting change. Keep each case earning its place:
+it should exercise something no other case does (see the comments at the
+top of the file for the current set's reasoning).
 
 ## TODO
 * sizing and formatting
@@ -57,6 +60,4 @@ tests for every small formatting change.
 	- positioning esp of dedication, etc. (should I just remove dedication?)
 * attriubtion for trans. in addition to text
 	* keep text/translation boxes same size
-* flexible width of text boxes to avoid as many line breaks as possible??
-* fixtures in one yaml / remove useless ones
 * text/translation labels
