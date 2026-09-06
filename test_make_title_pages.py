@@ -176,6 +176,51 @@ def test_markdown_lite(text, expected):
     assert make_title_pages.markdown_lite(text) == expected
 
 
+def test_render_line_without_tab():
+    assert make_title_pages.render_line("plain text") == '<p class="line">plain text</p>'
+
+
+def test_render_line_with_tab_splits_into_left_and_right_spans():
+    result = make_title_pages.render_line("left part\tright part")
+    assert result == (
+        '<p class="line line-split">'
+        '<span class="line-left">left part</span>'
+        '<span class="line-right">right part</span>'
+        "</p>"
+    )
+
+
+def test_render_line_with_leading_two_spaces_is_indented():
+    result = make_title_pages.render_line("  indented line")
+    assert result == '<p class="line line-indent">indented line</p>'
+
+
+def test_render_line_single_leading_space_is_not_indented():
+    result = make_title_pages.render_line(" one space")
+    assert "line-indent" not in result
+
+
+def test_render_line_indent_and_tab_split_combine():
+    result = make_title_pages.render_line("  left\tright")
+    assert result == (
+        '<p class="line line-indent line-split">'
+        '<span class="line-left">left</span>'
+        '<span class="line-right">right</span>'
+        "</p>"
+    )
+
+
+def test_render_line_applies_markdown_to_both_sides_of_tab():
+    result = make_title_pages.render_line("*left*\t**right**")
+    assert "<span class=\"line-left\"><em>left</em></span>" in result
+    assert "<span class=\"line-right\"><strong>right</strong></span>" in result
+
+
+def test_render_line_only_splits_on_first_tab():
+    result = make_title_pages.render_line("a\tb\tc")
+    assert '<span class="line-right">b\tc</span>' in result
+
+
 def test_render_html_has_strong_and_em_tags(tmp_path):
     path = write_yaml(
         tmp_path,

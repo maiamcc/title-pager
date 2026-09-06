@@ -33,6 +33,24 @@ def markdown_lite(text):
     return Markup(escaped)
 
 
+def render_line(line):
+    classes = ["line"]
+    if line.startswith("  "):
+        classes.append("line-indent")
+        line = line.lstrip(" ")
+
+    if "\t" in line:
+        left, right = line.split("\t", 1)
+        classes.append("line-split")
+        return Markup(
+            f'<p class="{" ".join(classes)}">'
+            f'<span class="line-left">{markdown_lite(left)}</span>'
+            f'<span class="line-right">{markdown_lite(right)}</span>'
+            "</p>"
+        )
+    return Markup(f'<p class="{" ".join(classes)}">{markdown_lite(line)}</p>')
+
+
 def validate_spec(spec, source, label=None):
     spec = spec or {}
     missing = [field for field in REQUIRED_FIELDS if not spec.get(field)]
@@ -82,6 +100,7 @@ def resolve_output_path(data, cli_output):
 def render_html(data):
     env = Environment(loader=FileSystemLoader(str(TEMPLATE_DIR)), autoescape=True)
     env.filters["markdown_lite"] = markdown_lite
+    env.filters["render_line"] = render_line
     template = env.get_template(TEMPLATE_NAME)
     return template.render(**data)
 
