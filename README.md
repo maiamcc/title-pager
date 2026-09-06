@@ -64,12 +64,16 @@ tests for every small formatting change.
 	* if a yaml file has a single item in it, keep current behavior
 [x] centered single-text
 	* for an item with only `text` and no `translation`, the  box containing that text should be horizontally centered in the page (the attribution, if any, remains right-justified within the box)
-[] line continuations
+[x] line continuations
 	* line continuations in a text or translation should have a hanging indent on all lines besides the first
 [] markdown support
 	* in text/translation, support simple markdown: `**` for bold, `*` or `_` for italics.
 	* you should be able to cover this in unit tests--assert that the resulting html has `<strong>` or `<em>` tags as appropriate
 * sizing and formatting
+	- size titles etc
+	- what gets italic and what doesn't
+	- box sizing and alignment
+	- positioning esp of dedication, etc. (should I just remove dedication?)
 * markdown support
 * keep text/translation lines correlated, pretty line spillover
 * keep text/translation boxes same size
