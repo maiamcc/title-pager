@@ -1,0 +1,28 @@
+title: Angelus ad Virginem
+composer: Traditional
+text:
+  stanzas:
+    - lines:
+        - Ave Maria, gratia plena
+        - Dominus tecum;
+        - Benedicta tu in mulieribus,
+        - et benedictus fructus ventris tui, Jesus.
+        - Sancta Maria, Mater Dei,
+        - ora pro nobis peccatoribus,
+        - nunc et in hora mortis nostrae.
+        - Amen.
+      translation_lines:
+        - Hail Mary, full of grace,
+        - The Lord is with thee;
+        - Blessed art thou amongst women,
+        - And blessed is the fruit of thy womb, Jesus.
+        - Holy Mary, Mother of God,
+        - Pray for us sinners,
+        - Now and at the hour of our death.
+        - Amen.
+    - lines:
+        - Angelus Domini nuntiavit Mariae
+        - et concepit de Spiritu sancto.
+      translation_lines:
+        - The angel of God visited Maria
+        - and she conceived of the Holy Spirit.

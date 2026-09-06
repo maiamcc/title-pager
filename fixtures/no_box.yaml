@@ -6,8 +6,6 @@ text:
     - lines:
         - This text has no border box around it.
         - It should still be positioned and spaced normally.
-translation:
-  stanzas:
-    - lines:
-        - This translation keeps its default box.
-        - So you can compare the two side by side.
+      translation_lines:
+        - This translation also has no box, since box now applies to both.
+        - So the two columns match.

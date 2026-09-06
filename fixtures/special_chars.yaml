@@ -10,11 +10,9 @@ text:
         - "Dominus tecum."
         - "Benedicta tu in mulieribus,"
         - "et benedictus fructus ventris tui, Jesus."
-  attribution: "Angelus Domini, arr. F. Biebl"
-translation:
-  stanzas:
-    - lines:
+      translation_lines:
         - "Hail Mary, full of grace:"
         - "the Lord is with thee."
         - "Blessed art thou amongst women,"
         - "and blessed is the fruit of thy womb, Jesus."
+  attribution: "Angelus Domini, arr. F. Biebl"

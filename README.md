@@ -22,9 +22,12 @@ source ~/.virtualenvs/title-pager/bin/activate
 ```
 
 `title` and `composer` are required; everything else (`composer_dates`,
-`subtitle`, `dedication`, `text`, `translation`, `page_size`) is optional.
-See [example.yaml](example.yaml) for the full field shape, including the
-`stanzas`/`lines`/`attribution` structure for `text` and `translation`.
+`subtitle`, `dedication`, `text`, `page_size`) is optional. See
+[example.yaml](example.yaml) for the full field shape: `text` holds
+`stanzas` (each a `lines` list, optionally paired with a `translation_lines`
+list of the same length) plus an optional `attribution` and `box` (default
+true, applies to both columns). A translation column only appears when at
+least one stanza has `translation_lines`.
 
 Omit `-o` and the output filename is derived from the title.
 

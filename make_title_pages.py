@@ -74,19 +74,38 @@ def render_line(line):
 
 def validate_spec(spec, source, label=None):
     spec = spec or {}
-    location = str(source) + (f" (entry {label})" if label is not None else "")
 
     missing = [field for field in REQUIRED_FIELDS if not spec.get(field)]
     if missing:
+        location = str(source) + (f" (entry {label})" if label is not None else "")
         sys.exit(f"error: missing required field(s) in {location}: {', '.join(missing)}")
 
     if "-" in (spec.get("composer_dates") or ""):
         warn("found hyphen in composer_dates, did you mean to use an en-dash (–)?")
 
-    if spec.get("translation") and not spec.get("text"):
-        raise NotImplementedError("translation without text is not supported")
+    for i, stanza in enumerate(((spec.get("text") or {}).get("stanzas")) or []):
+        translation_lines = stanza.get("translation_lines")
+        if translation_lines is not None:
+            n_lines = len(stanza.get("lines") or [])
+            n_translation = len(translation_lines)
+            if n_lines != n_translation:
+                warn(
+                    f"stanza {i} has {n_lines} lines but {n_translation} translation_lines"
+                )
 
     return spec
+
+
+def build_translation_block(text):
+    if not text:
+        return None
+    stanzas = text.get("stanzas") or []
+    if not any("translation_lines" in stanza for stanza in stanzas):
+        return None
+    return {
+        "stanzas": [{"lines": stanza.get("translation_lines") or []} for stanza in stanzas],
+        "box": text.get("box", True),
+    }
 
 
 def load_data(yaml_path):
@@ -124,7 +143,8 @@ def render_html(data):
     env.filters["markdown_lite"] = markdown_lite
     env.filters["render_line"] = render_line
     template = env.get_template(TEMPLATE_NAME)
-    return template.render(**data)
+    context = {**data, "translation": build_translation_block(data.get("text"))}
+    return template.render(**context)
 
 
 def render_pdf_bytes(data):

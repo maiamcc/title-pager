@@ -12,13 +12,11 @@ text:
         - in se reconcilians
         - "   ima summis."
         - Alleluja.
-  attribution: Gradual for the Feast of the Immaculate Conception
-translation:
-  stanzas:
-    - lines:
+      translation_lines:
         - "The rod of Jesse hath blossomed:"
         - "a Virgin hath brought forth God and man:"
         - God hath restored peace,
         - reconciling in Himself
         - "   the lowest with the highest."
         - Alleluia.
+  attribution: Gradual for the Feast of the Immaculate Conception

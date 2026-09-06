@@ -87,20 +87,101 @@ def test_load_data_empty_file(tmp_path):
         make_title_pages.load_data(path)
 
 
-def test_load_data_translation_without_text_not_implemented(tmp_path):
+def test_load_data_warns_on_mismatched_translation_line_count(tmp_path, capsys):
     path = write_yaml(
         tmp_path,
         """
         title: Foo
         composer: Bar
-        translation:
+        text:
           stanzas:
             - lines:
-                - Hello
+                - one
+                - two
+              translation_lines:
+                - uno
         """,
     )
-    with pytest.raises(NotImplementedError):
-        make_title_pages.load_data(path)
+    make_title_pages.load_data(path)
+    err = capsys.readouterr().err
+    assert "stanza 0" in err
+    assert "2 lines" in err
+    assert "1 translation_lines" in err
+
+
+def test_load_data_no_warning_when_translation_line_count_matches(tmp_path, capsys):
+    path = write_yaml(
+        tmp_path,
+        """
+        title: Foo
+        composer: Bar
+        text:
+          stanzas:
+            - lines:
+                - one
+                - two
+              translation_lines:
+                - uno
+                - dos
+        """,
+    )
+    make_title_pages.load_data(path)
+    assert capsys.readouterr().err == ""
+
+
+def test_load_data_no_warning_when_translation_lines_absent(tmp_path, capsys):
+    path = write_yaml(
+        tmp_path,
+        """
+        title: Foo
+        composer: Bar
+        text:
+          stanzas:
+            - lines:
+                - one
+                - two
+        """,
+    )
+    make_title_pages.load_data(path)
+    assert capsys.readouterr().err == ""
+
+
+def test_build_translation_block_none_when_no_translation_lines():
+    text = {"stanzas": [{"lines": ["Hello"]}]}
+    assert make_title_pages.build_translation_block(text) is None
+
+
+def test_build_translation_block_none_when_text_absent():
+    assert make_title_pages.build_translation_block(None) is None
+
+
+def test_build_translation_block_extracts_translation_lines():
+    text = {
+        "stanzas": [
+            {"lines": ["one", "two"], "translation_lines": ["uno", "dos"]},
+            {"lines": ["three"], "translation_lines": ["tres"]},
+        ]
+    }
+    block = make_title_pages.build_translation_block(text)
+    assert block["stanzas"] == [{"lines": ["uno", "dos"]}, {"lines": ["tres"]}]
+    assert block["box"] is True
+
+
+def test_build_translation_block_uses_text_box_setting():
+    text = {"stanzas": [{"lines": ["a"], "translation_lines": ["b"]}], "box": False}
+    block = make_title_pages.build_translation_block(text)
+    assert block["box"] is False
+
+
+def test_build_translation_block_partial_stanza_defaults_to_empty_lines():
+    text = {
+        "stanzas": [
+            {"lines": ["one"], "translation_lines": ["uno"]},
+            {"lines": ["two"]},
+        ]
+    }
+    block = make_title_pages.build_translation_block(text)
+    assert block["stanzas"] == [{"lines": ["uno"]}, {"lines": []}]
 
 
 def test_load_data_text_without_translation_is_fine(tmp_path):
@@ -336,7 +417,7 @@ def test_render_html_box_false_omits_border(tmp_path):
     assert 'class="text-box no-box"' in html
 
 
-def test_render_html_box_is_independent_per_block(tmp_path):
+def test_render_html_box_applies_to_derived_translation_too(tmp_path):
     path = write_yaml(
         tmp_path,
         """
@@ -347,15 +428,13 @@ def test_render_html_box_is_independent_per_block(tmp_path):
           stanzas:
             - lines:
                 - Hello
-        translation:
-          stanzas:
-            - lines:
+              translation_lines:
                 - World
         """,
     )
     data = make_title_pages.load_data(path)
     html = make_title_pages.render_html(data)
-    assert html.count('class="text-box no-box"') == 1
+    assert html.count('class="text-box no-box"') == 2
 
 
 def test_combine_pdfs_concatenates_pages(tmp_path):

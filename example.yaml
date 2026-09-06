@@ -11,9 +11,7 @@ text:
         - in se reconcilians
         - "   ima summis."
         - Alleluja.
-translation:
-  stanzas:
-    - lines:
+      translation_lines:
         - "The rod of Jesse hath blossomed:"
         - "a Virgin hath brought forth God and man:"
         - God hath restored peace,
