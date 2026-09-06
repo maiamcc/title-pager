@@ -5,6 +5,37 @@ import pytest
 import make_title_pages
 
 
+def test_log_is_uncolored_on_stdout(capsys):
+    make_title_pages.log("plain message")
+    captured = capsys.readouterr()
+    assert captured.out == "plain message\n"
+    assert captured.err == ""
+
+
+def test_warn_is_orange_on_stderr(capsys):
+    make_title_pages.warn("careful")
+    captured = capsys.readouterr()
+    assert captured.out == ""
+    assert make_title_pages.COLOR_WARNING in captured.err
+    assert "warning: careful" in captured.err
+
+
+def test_error_is_red_on_stderr(capsys):
+    make_title_pages.error("broken")
+    captured = capsys.readouterr()
+    assert captured.out == ""
+    assert make_title_pages.COLOR_ERROR in captured.err
+    assert "error: broken" in captured.err
+
+
+def test_ok_is_green_on_stdout(capsys):
+    make_title_pages.ok("wrote file.pdf")
+    captured = capsys.readouterr()
+    assert captured.err == ""
+    assert make_title_pages.COLOR_OK in captured.out
+    assert "wrote file.pdf" in captured.out
+
+
 @pytest.mark.parametrize(
     "text, expected",
     [
@@ -86,6 +117,29 @@ def test_load_data_text_without_translation_is_fine(tmp_path):
     )
     data = make_title_pages.load_data(path)
     assert data["text"]["stanzas"][0]["lines"] == ["Hello"]
+
+
+def test_load_data_warns_on_hyphen_in_composer_dates(tmp_path, capsys):
+    path = write_yaml(tmp_path, 'title: Foo\ncomposer: Bar\ncomposer_dates: "1824-1896"\n')
+    make_title_pages.load_data(path)
+    err = capsys.readouterr().err
+    assert "hyphen" in err.lower()
+    assert "en-dash" in err.lower()
+    assert "composer_dates" in err
+    assert path.name not in err
+    assert make_title_pages.COLOR_WARNING in err
+
+
+def test_load_data_no_warning_for_en_dash_composer_dates(tmp_path, capsys):
+    path = write_yaml(tmp_path, 'title: Foo\ncomposer: Bar\ncomposer_dates: "1824–1896"\n')
+    make_title_pages.load_data(path)
+    assert capsys.readouterr().err == ""
+
+
+def test_load_data_no_warning_when_composer_dates_absent(tmp_path, capsys):
+    path = write_yaml(tmp_path, "title: Foo\ncomposer: Bar\n")
+    make_title_pages.load_data(path)
+    assert capsys.readouterr().err == ""
 
 
 def test_resolve_output_path_defaults_to_slugified_title():

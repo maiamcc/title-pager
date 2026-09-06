@@ -19,6 +19,27 @@ TEMPLATE_DIR = pathlib.Path(__file__).parent
 TEMPLATE_NAME = "template.html"
 DEFAULT_MULTI_SPEC_OUTPUT = "out.pdf"
 
+COLOR_WARNING = "\033[38;5;208m"
+COLOR_OK = "\033[32m"
+COLOR_ERROR = "\033[31m"
+COLOR_RESET = "\033[0m"
+
+
+def log(message):
+    print(message)
+
+
+def warn(message):
+    print(f"{COLOR_WARNING}warning: {message}{COLOR_RESET}", file=sys.stderr)
+
+
+def error(message):
+    print(f"{COLOR_ERROR}error: {message}{COLOR_RESET}", file=sys.stderr)
+
+
+def ok(message):
+    print(f"{COLOR_OK}{message}{COLOR_RESET}")
+
 
 def slugify(text):
     slug = re.sub(r"[^\w\s-]", "", text).strip().lower()
@@ -53,10 +74,14 @@ def render_line(line):
 
 def validate_spec(spec, source, label=None):
     spec = spec or {}
+    location = str(source) + (f" (entry {label})" if label is not None else "")
+
     missing = [field for field in REQUIRED_FIELDS if not spec.get(field)]
     if missing:
-        location = str(source) + (f" (entry {label})" if label is not None else "")
         sys.exit(f"error: missing required field(s) in {location}: {', '.join(missing)}")
+
+    if "-" in (spec.get("composer_dates") or ""):
+        warn("found hyphen in composer_dates, did you mean to use an en-dash (–)?")
 
     if spec.get("translation") and not spec.get("text"):
         raise NotImplementedError("translation without text is not supported")
@@ -87,10 +112,7 @@ def resolve_output_path(data, cli_output):
     outfile_name = data.pop("outfile_name", None)
     if cli_output:
         if outfile_name:
-            print(
-                f"warning: -o overrides outfile_name ({outfile_name!r}) from the YAML",
-                file=sys.stderr,
-            )
+            warn(f"-o overrides outfile_name ({outfile_name!r}) from the YAML")
         return cli_output
     if outfile_name:
         return pathlib.Path(outfile_name)
@@ -141,16 +163,16 @@ def main():
     if len(specs) == 1:
         output_path = resolve_output_path(specs[0], args.output)
         render_pdf(specs[0], output_path)
-        print(f"wrote {output_path}")
+        ok(f"wrote {output_path}")
     elif args.multifile:
         for spec in specs:
             output_path = resolve_output_path(spec, None)
             render_pdf(spec, output_path)
-            print(f"wrote {output_path}")
+            ok(f"wrote {output_path}")
     else:
         output_path = args.output or pathlib.Path(DEFAULT_MULTI_SPEC_OUTPUT)
         combine_pdfs([render_pdf_bytes(spec) for spec in specs], output_path)
-        print(f"wrote {output_path}")
+        ok(f"wrote {output_path}")
 
 
 if __name__ == "__main__":
