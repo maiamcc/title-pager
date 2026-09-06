@@ -5,7 +5,7 @@
 <style>
   @page {
     size: {{ page_size | default("letter") }};
-    margin: 1in;
+    margin: 1in 1in 0.5in 1in;
   }
 
   html, body {
@@ -29,7 +29,7 @@
   }
 
   .composer {
-    font-size: 16pt;
+    font-size: 18pt;
   }
 
   .title-block {
@@ -39,7 +39,7 @@
   }
 
   .title {
-    font-size: 32pt;
+    font-size: 38pt;
     font-weight: bold;
     margin: 0;
   }
@@ -61,6 +61,7 @@
     align-items: flex-start;
     gap: 0.6in;
     width: 100%;
+    margin-top: 1.1in;
   }
 
   .text-row.single .text-box {
