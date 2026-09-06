@@ -66,7 +66,7 @@ tests for every small formatting change.
 	* for an item with only `text` and no `translation`, the  box containing that text should be horizontally centered in the page (the attribution, if any, remains right-justified within the box)
 [x] line continuations
 	* line continuations in a text or translation should have a hanging indent on all lines besides the first
-[] markdown support
+[x] markdown support
 	* in text/translation, support simple markdown: `**` for bold, `*` or `_` for italics.
 	* you should be able to cover this in unit tests--assert that the resulting html has `<strong>` or `<em>` tags as appropriate
 * sizing and formatting

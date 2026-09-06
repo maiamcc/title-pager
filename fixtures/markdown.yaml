@@ -1,0 +1,11 @@
+title: Markdown Demo
+composer: Test Composer
+text:
+  stanzas:
+    - lines:
+        - "This line has **bold text** in it."
+        - "This line has *italic text* in it."
+        - "This line has _also italic_ text in it."
+        - "This line has **bold** and *italic* together."
+        - "This line has literal characters: Ben & Jerry's <3"
+  attribution: no markdown here, just **literal** asterisks

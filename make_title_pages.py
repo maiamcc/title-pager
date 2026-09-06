@@ -2,6 +2,7 @@
 """Generate a formatted title-page PDF from a YAML description."""
 
 import argparse
+import html
 import io
 import pathlib
 import re
@@ -9,6 +10,7 @@ import sys
 
 import yaml
 from jinja2 import Environment, FileSystemLoader
+from markupsafe import Markup
 from pypdf import PdfReader, PdfWriter
 from weasyprint import HTML
 
@@ -21,6 +23,14 @@ DEFAULT_MULTI_SPEC_OUTPUT = "out.pdf"
 def slugify(text):
     slug = re.sub(r"[^\w\s-]", "", text).strip().lower()
     return re.sub(r"[\s_]+", "-", slug) or "title-page"
+
+
+def markdown_lite(text):
+    escaped = html.escape(text)
+    escaped = re.sub(r"\*\*(.+?)\*\*", r"<strong>\1</strong>", escaped)
+    escaped = re.sub(r"\*(.+?)\*", r"<em>\1</em>", escaped)
+    escaped = re.sub(r"_(.+?)_", r"<em>\1</em>", escaped)
+    return Markup(escaped)
 
 
 def validate_spec(spec, source, label=None):
@@ -69,11 +79,15 @@ def resolve_output_path(data, cli_output):
     return pathlib.Path(f"{slugify(data['title'])}.pdf")
 
 
-def render_pdf_bytes(data):
-    env = Environment(loader=FileSystemLoader(str(TEMPLATE_DIR)))
+def render_html(data):
+    env = Environment(loader=FileSystemLoader(str(TEMPLATE_DIR)), autoescape=True)
+    env.filters["markdown_lite"] = markdown_lite
     template = env.get_template(TEMPLATE_NAME)
-    html = template.render(**data)
-    return HTML(string=html, base_url=str(TEMPLATE_DIR)).write_pdf()
+    return template.render(**data)
+
+
+def render_pdf_bytes(data):
+    return HTML(string=render_html(data), base_url=str(TEMPLATE_DIR)).write_pdf()
 
 
 def render_pdf(data, output_path):

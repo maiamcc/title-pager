@@ -114,7 +114,7 @@
       {% for stanza in block.stanzas %}
       <div class="stanza">
         {% for line in stanza.lines %}
-        <p class="line">{{ line }}</p>
+        <p class="line">{{ line | markdown_lite }}</p>
         {% endfor %}
       </div>
       {% endfor %}

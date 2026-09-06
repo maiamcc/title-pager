@@ -161,6 +161,47 @@ def test_load_specs_missing_field_in_one_entry_names_it(tmp_path):
         make_title_pages.load_specs(path)
 
 
+@pytest.mark.parametrize(
+    "text, expected",
+    [
+        ("**bold**", "<strong>bold</strong>"),
+        ("*italic*", "<em>italic</em>"),
+        ("_italic_", "<em>italic</em>"),
+        ("**bold** and *italic*", "<strong>bold</strong> and <em>italic</em>"),
+        ("plain text", "plain text"),
+        ("Ben & Jerry's <3", "Ben &amp; Jerry&#x27;s &lt;3"),
+    ],
+)
+def test_markdown_lite(text, expected):
+    assert make_title_pages.markdown_lite(text) == expected
+
+
+def test_render_html_has_strong_and_em_tags(tmp_path):
+    path = write_yaml(
+        tmp_path,
+        """
+        title: Foo
+        composer: Bar
+        text:
+          stanzas:
+            - lines:
+                - "**bold** and *italic* and _also italic_"
+        """,
+    )
+    data = make_title_pages.load_data(path)
+    html = make_title_pages.render_html(data)
+    assert "<strong>bold</strong>" in html
+    assert "<em>italic</em>" in html
+    assert "<em>also italic</em>" in html
+
+
+def test_render_html_escapes_other_fields(tmp_path):
+    path = write_yaml(tmp_path, 'title: "Foo & Bar"\ncomposer: Baz\n')
+    data = make_title_pages.load_data(path)
+    html = make_title_pages.render_html(data)
+    assert "Foo &amp; Bar" in html
+
+
 def test_combine_pdfs_concatenates_pages(tmp_path):
     data_a = {"title": "First Piece", "composer": "A"}
     data_b = {"title": "Second Piece", "composer": "B"}
