@@ -52,12 +52,11 @@ tests for every small formatting change.
 
 ## TODO
 * sizing and formatting
-	- size titles etc
 	- what gets italic and what doesn't
 	- box sizing and alignment
 	- positioning esp of dedication, etc. (should I just remove dedication?)
-* markdown support
-* keep text/translation lines correlated, pretty line spillover
-* keep text/translation boxes same size
-* add marker for "fixtures identical, no need for re-review"
-* fixtures in one yaml
+* attriubtion for trans. in addition to text
+	* keep text/translation boxes same size
+* flexible width of text boxes to avoid as many line breaks as possible??
+* fixtures in one yaml / remove useless ones
+* text/translation labels

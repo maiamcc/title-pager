@@ -184,6 +184,147 @@ def test_build_translation_block_partial_stanza_defaults_to_empty_lines():
     assert block["stanzas"] == [{"lines": ["uno"]}, {"lines": []}]
 
 
+def test_build_correlated_rows_basic_pairing():
+    text = {"stanzas": [{"lines": ["one", "two"], "translation_lines": ["uno", "dos"]}]}
+    result = make_title_pages.build_correlated_rows(text)
+    assert [r["row_number"] for r in result["rows"]] == [1, 2]
+    assert result["rows"][0]["left"] == '<p class="line">one</p>'
+    assert result["rows"][0]["right"] == '<p class="line">uno</p>'
+    assert result["left_first_row"] == 1
+    assert result["left_last_row"] == 2
+    assert result["right_first_row"] == 1
+    assert result["right_last_row"] == 2
+    assert result["box"] is True
+
+
+def test_build_correlated_rows_marks_stanza_starts():
+    text = {
+        "stanzas": [
+            {"lines": ["a", "b"], "translation_lines": ["x", "y"]},
+            {"lines": ["c"], "translation_lines": ["z"]},
+        ]
+    }
+    result = make_title_pages.build_correlated_rows(text)
+    assert [r["stanza_start"] for r in result["rows"]] == [True, False, True]
+
+
+def test_build_correlated_rows_mismatched_lengths_leave_gaps():
+    text = {"stanzas": [{"lines": ["one", "two", "three"], "translation_lines": ["uno"]}]}
+    result = make_title_pages.build_correlated_rows(text)
+    rights = [r["right"] for r in result["rows"]]
+    assert rights[0] is not None
+    assert rights[1] is None
+    assert rights[2] is None
+    assert result["right_first_row"] == 1
+    assert result["right_last_row"] == 1
+    assert result["left_last_row"] == 3
+
+
+def test_build_correlated_rows_stanza_without_translation_lines_leaves_right_blank():
+    text = {"stanzas": [{"lines": ["one", "two"]}]}
+    result = make_title_pages.build_correlated_rows(text)
+    assert all(r["right"] is None for r in result["rows"])
+    assert result["right_first_row"] is None
+    assert result["right_last_row"] is None
+    assert result["left_first_row"] == 1
+    assert result["left_last_row"] == 2
+
+
+def test_build_correlated_rows_attribution_becomes_trailing_left_only_row():
+    text = {
+        "stanzas": [{"lines": ["one"], "translation_lines": ["uno"]}],
+        "attribution": "Some Source",
+    }
+    result = make_title_pages.build_correlated_rows(text)
+    assert len(result["rows"]) == 2
+    last_row = result["rows"][-1]
+    assert "attribution" in last_row["left"]
+    assert "Some Source" in last_row["left"]
+    assert last_row["right"] is None
+    assert result["left_last_row"] == 2
+    assert result["right_last_row"] == 1
+
+
+def test_build_correlated_rows_frame_spans_use_the_taller_side():
+    text = {
+        "stanzas": [{"lines": ["one"], "translation_lines": ["uno"]}],
+        "attribution": "Some Source",
+    }
+    result = make_title_pages.build_correlated_rows(text)
+    # left has 2 rows (line + attribution), right only 1 (line) -- both
+    # frames should span to the taller side's extent, row 2.
+    assert result["frame_first_row"] == 1
+    assert result["frame_last_row"] == 2
+    assert result["left_last_row"] == 2
+    assert result["right_last_row"] == 1
+
+
+def test_build_correlated_rows_frame_spans_match_when_sides_equal():
+    text = {"stanzas": [{"lines": ["one", "two"], "translation_lines": ["uno", "dos"]}]}
+    result = make_title_pages.build_correlated_rows(text)
+    assert result["frame_first_row"] == 1
+    assert result["frame_last_row"] == 2
+
+
+def test_render_html_boxes_end_at_same_row_despite_attribution(tmp_path):
+    path = write_yaml(
+        tmp_path,
+        """
+        title: Foo
+        composer: Bar
+        text:
+          stanzas:
+            - lines:
+                - one
+              translation_lines:
+                - uno
+          attribution: Some Source
+        """,
+    )
+    data = make_title_pages.load_data(path)
+    html = make_title_pages.render_html(data)
+    assert 'class="col-frame left" style="grid-row: 1 / 3;"' in html
+    assert 'class="col-frame right" style="grid-row: 1 / 3;"' in html
+
+
+def test_build_correlated_rows_attribution_is_html_escaped():
+    text = {
+        "stanzas": [{"lines": ["one"], "translation_lines": ["uno"]}],
+        "attribution": "Ben & Jerry's",
+    }
+    result = make_title_pages.build_correlated_rows(text)
+    assert "Ben &amp; Jerry&#x27;s" in result["rows"][-1]["left"]
+
+
+def test_build_correlated_rows_uses_text_box_setting():
+    text = {"stanzas": [{"lines": ["one"], "translation_lines": ["uno"]}], "box": False}
+    result = make_title_pages.build_correlated_rows(text)
+    assert result["box"] is False
+
+
+def test_render_html_spillover_keeps_subsequent_rows_aligned(tmp_path):
+    path = write_yaml(
+        tmp_path,
+        """
+        title: Foo
+        composer: Bar
+        text:
+          stanzas:
+            - lines:
+                - one
+                - two
+              translation_lines:
+                - uno
+                - dos
+        """,
+    )
+    data = make_title_pages.load_data(path)
+    html = make_title_pages.render_html(data)
+    assert 'grid-row: 1 / 3;' in html
+    assert 'style="grid-row: 1;"' in html
+    assert 'style="grid-row: 2;"' in html
+
+
 def test_load_data_text_without_translation_is_fine(tmp_path):
     path = write_yaml(
         tmp_path,
@@ -434,7 +575,8 @@ def test_render_html_box_applies_to_derived_translation_too(tmp_path):
     )
     data = make_title_pages.load_data(path)
     html = make_title_pages.render_html(data)
-    assert html.count('class="text-box no-box"') == 2
+    assert 'class="col-frame left no-box"' in html
+    assert 'class="col-frame right no-box"' in html
 
 
 def test_combine_pdfs_concatenates_pages(tmp_path):

@@ -108,6 +108,59 @@ def build_translation_block(text):
     }
 
 
+def build_correlated_rows(text):
+    rows = []
+    for stanza in text.get("stanzas") or []:
+        lines = stanza.get("lines") or []
+        translation_lines = stanza.get("translation_lines")
+        row_count = max(len(lines), len(translation_lines or []))
+        for i in range(row_count):
+            rows.append(
+                {
+                    "left": render_line(lines[i]) if i < len(lines) else None,
+                    "right": (
+                        render_line(translation_lines[i])
+                        if translation_lines is not None and i < len(translation_lines)
+                        else None
+                    ),
+                    "stanza_start": i == 0,
+                }
+            )
+
+    if text.get("attribution"):
+        rows.append(
+            {
+                "left": Markup(f'<p class="attribution">— {html.escape(text["attribution"])}</p>'),
+                "right": None,
+                "stanza_start": False,
+            }
+        )
+
+    for idx, row in enumerate(rows, start=1):
+        row["row_number"] = idx
+
+    left_numbers = [row["row_number"] for row in rows if row["left"] is not None]
+    right_numbers = [row["row_number"] for row in rows if row["right"] is not None]
+
+    first_candidates = [n[0] for n in (left_numbers, right_numbers) if n]
+    last_candidates = [n[-1] for n in (left_numbers, right_numbers) if n]
+
+    return {
+        "rows": rows,
+        "left_first_row": left_numbers[0] if left_numbers else None,
+        "left_last_row": left_numbers[-1] if left_numbers else None,
+        "right_first_row": right_numbers[0] if right_numbers else None,
+        "right_last_row": right_numbers[-1] if right_numbers else None,
+        # Both boxes end at the same row (the taller of the two), so a
+        # trailing element on one side (e.g. attribution) leaves matching
+        # blank space in the other rather than the boxes ending at
+        # different heights.
+        "frame_first_row": min(first_candidates) if first_candidates else None,
+        "frame_last_row": max(last_candidates) if last_candidates else None,
+        "box": text.get("box", True),
+    }
+
+
 def load_data(yaml_path):
     with open(yaml_path, "r", encoding="utf-8") as f:
         data = yaml.safe_load(f) or {}
@@ -143,7 +196,11 @@ def render_html(data):
     env.filters["markdown_lite"] = markdown_lite
     env.filters["render_line"] = render_line
     template = env.get_template(TEMPLATE_NAME)
-    context = {**data, "translation": build_translation_block(data.get("text"))}
+    text = data.get("text")
+    translation = build_translation_block(text)
+    context = {**data, "translation": translation}
+    if text and translation:
+        context["correlated"] = build_correlated_rows(text)
     return template.render(**context)
 
 
