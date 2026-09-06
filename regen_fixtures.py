@@ -13,6 +13,7 @@ import make_title_pages
 
 FIXTURES_DIR = pathlib.Path(__file__).parent / "fixtures"
 OUT_DIR = FIXTURES_DIR / "out"
+MANY_CHANGES_THRESHOLD = 4
 
 
 def label_page(name, page_size):
@@ -66,11 +67,14 @@ def main():
         review.write(f)
     print(f"wrote {review_path}")
 
-    if changed_paths:
+    if not changed_paths:
+        print("no fixtures changed since last run; nothing to review")
+    elif len(changed_paths) >= MANY_CHANGES_THRESHOLD:
+        print(f"{len(changed_paths)} fixtures changed; opening {review_path} instead")
+        subprocess.run(["open", str(review_path)])
+    else:
         print(f"opening {len(changed_paths)} changed fixture(s) for review")
         subprocess.run(["open", *[str(p) for p in changed_paths]])
-    else:
-        print("no fixtures changed since last run; nothing to review")
 
 
 if __name__ == "__main__":
