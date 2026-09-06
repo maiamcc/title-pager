@@ -9,7 +9,7 @@ import subprocess
 from pypdf import PdfReader, PdfWriter
 from weasyprint import HTML
 
-import titlepage
+import make_title_pages
 
 FIXTURES_DIR = pathlib.Path(__file__).parent / "fixtures"
 OUT_DIR = FIXTURES_DIR / "out"
@@ -34,9 +34,9 @@ def main():
     review = PdfWriter()
 
     for yaml_path in sorted(FIXTURES_DIR.glob("*.yaml")):
-        data = titlepage.load_data(yaml_path)
+        data = make_title_pages.load_data(yaml_path)
         pdf_path = OUT_DIR / f"{yaml_path.stem}.pdf"
-        titlepage.render_pdf(data, pdf_path)
+        make_title_pages.render_pdf(data, pdf_path)
         print(f"wrote {pdf_path}")
 
         review.append(label_page(yaml_path.name, data.get("page_size", "letter")))
