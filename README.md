@@ -50,7 +50,7 @@ tests for every small formatting change.
 	* use key `outfile_name` in YAML to allow for specifying the name of the generated file (same behavior is `-o` when invoking)
 	* a passed `-o` flag overrides the value from the yaml (but displays a warning)
 	* behavior without `-o` and without `outfile_name` is the same--derive output name from title
-[] Ability to generate multiple title pages from a single yaml file
+[x] Ability to generate multiple title pages from a single yaml file
 	* a yaml file may contain a LIST of title page specs eg:
 	```
 	- title: Virga Jesse
@@ -74,3 +74,4 @@ tests for every small formatting change.
 * keep text/translation lines correlated, pretty line spillover
 * keep text/translation boxes same size
 * add marker for "fixtures identical, no need for re-review"
+* fixtures in one yaml

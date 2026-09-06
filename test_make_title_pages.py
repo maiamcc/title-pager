@@ -114,3 +114,66 @@ def test_resolve_output_path_cli_without_outfile_name_no_warning(capsys):
     path = make_title_pages.resolve_output_path(data, pathlib.Path("cli.pdf"))
     assert path == pathlib.Path("cli.pdf")
     assert capsys.readouterr().err == ""
+
+
+def test_load_specs_bare_dict_returns_single_item_list(tmp_path):
+    path = write_yaml(tmp_path, "title: Foo\ncomposer: Bar\n")
+    specs = make_title_pages.load_specs(path)
+    assert specs == [{"title": "Foo", "composer": "Bar"}]
+
+
+def test_load_specs_one_item_list_returns_single_item_list(tmp_path):
+    path = write_yaml(tmp_path, "- title: Foo\n  composer: Bar\n")
+    specs = make_title_pages.load_specs(path)
+    assert specs == [{"title": "Foo", "composer": "Bar"}]
+
+
+def test_load_specs_multi_item_list(tmp_path):
+    path = write_yaml(
+        tmp_path,
+        """
+        - title: Virga Jesse
+          composer: Anton Bruckner
+        - title: Call Me Maybe
+          composer: C.R. Jepsen
+        """,
+    )
+    specs = make_title_pages.load_specs(path)
+    assert [s["title"] for s in specs] == ["Virga Jesse", "Call Me Maybe"]
+
+
+def test_load_specs_empty_list_errors(tmp_path):
+    path = write_yaml(tmp_path, "[]\n")
+    with pytest.raises(SystemExit, match="empty list"):
+        make_title_pages.load_specs(path)
+
+
+def test_load_specs_missing_field_in_one_entry_names_it(tmp_path):
+    path = write_yaml(
+        tmp_path,
+        """
+        - title: Virga Jesse
+          composer: Anton Bruckner
+        - title: Call Me Maybe
+        """,
+    )
+    with pytest.raises(SystemExit, match=r"entry 1.*composer"):
+        make_title_pages.load_specs(path)
+
+
+def test_combine_pdfs_concatenates_pages(tmp_path):
+    data_a = {"title": "First Piece", "composer": "A"}
+    data_b = {"title": "Second Piece", "composer": "B"}
+    pdf_bytes = [
+        make_title_pages.render_pdf_bytes(data_a),
+        make_title_pages.render_pdf_bytes(data_b),
+    ]
+    output_path = tmp_path / "combined.pdf"
+    make_title_pages.combine_pdfs(pdf_bytes, output_path)
+
+    from pypdf import PdfReader
+
+    reader = PdfReader(str(output_path))
+    assert len(reader.pages) == 2
+    assert "First Piece" in reader.pages[0].extract_text()
+    assert "Second Piece" in reader.pages[1].extract_text()

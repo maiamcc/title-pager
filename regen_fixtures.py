@@ -34,12 +34,18 @@ def main():
     review = PdfWriter()
 
     for yaml_path in sorted(FIXTURES_DIR.glob("*.yaml")):
-        data = make_title_pages.load_data(yaml_path)
+        specs = make_title_pages.load_specs(yaml_path)
         pdf_path = OUT_DIR / f"{yaml_path.stem}.pdf"
-        make_title_pages.render_pdf(data, pdf_path)
+
+        if len(specs) == 1:
+            make_title_pages.render_pdf(specs[0], pdf_path)
+        else:
+            make_title_pages.combine_pdfs(
+                [make_title_pages.render_pdf_bytes(spec) for spec in specs], pdf_path
+            )
         print(f"wrote {pdf_path}")
 
-        review.append(label_page(yaml_path.name, data.get("page_size", "letter")))
+        review.append(label_page(yaml_path.name, specs[0].get("page_size", "letter")))
         review.append(PdfReader(str(pdf_path)))
 
     review_path = OUT_DIR / "_review.pdf"

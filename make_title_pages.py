@@ -2,17 +2,20 @@
 """Generate a formatted title-page PDF from a YAML description."""
 
 import argparse
+import io
 import pathlib
 import re
 import sys
 
 import yaml
 from jinja2 import Environment, FileSystemLoader
+from pypdf import PdfReader, PdfWriter
 from weasyprint import HTML
 
 REQUIRED_FIELDS = ("title", "composer")
 TEMPLATE_DIR = pathlib.Path(__file__).parent
 TEMPLATE_NAME = "template.html"
+DEFAULT_MULTI_SPEC_OUTPUT = "out.pdf"
 
 
 def slugify(text):
@@ -20,18 +23,36 @@ def slugify(text):
     return re.sub(r"[\s_]+", "-", slug) or "title-page"
 
 
+def validate_spec(spec, source, label=None):
+    spec = spec or {}
+    missing = [field for field in REQUIRED_FIELDS if not spec.get(field)]
+    if missing:
+        location = str(source) + (f" (entry {label})" if label is not None else "")
+        sys.exit(f"error: missing required field(s) in {location}: {', '.join(missing)}")
+
+    if spec.get("translation") and not spec.get("text"):
+        raise NotImplementedError("translation without text is not supported")
+
+    return spec
+
+
 def load_data(yaml_path):
     with open(yaml_path, "r", encoding="utf-8") as f:
         data = yaml.safe_load(f) or {}
 
-    missing = [field for field in REQUIRED_FIELDS if not data.get(field)]
-    if missing:
-        sys.exit(f"error: missing required field(s) in {yaml_path}: {', '.join(missing)}")
+    return validate_spec(data, yaml_path)
 
-    if data.get("translation") and not data.get("text"):
-        raise NotImplementedError("translation without text is not supported")
 
-    return data
+def load_specs(yaml_path):
+    with open(yaml_path, "r", encoding="utf-8") as f:
+        raw = yaml.safe_load(f)
+
+    if isinstance(raw, list):
+        if not raw:
+            sys.exit(f"error: {yaml_path} contains an empty list")
+        return [validate_spec(spec, yaml_path, label=i) for i, spec in enumerate(raw)]
+
+    return [validate_spec(raw, yaml_path)]
 
 
 def resolve_output_path(data, cli_output):
@@ -48,24 +69,55 @@ def resolve_output_path(data, cli_output):
     return pathlib.Path(f"{slugify(data['title'])}.pdf")
 
 
-def render_pdf(data, output_path):
+def render_pdf_bytes(data):
     env = Environment(loader=FileSystemLoader(str(TEMPLATE_DIR)))
     template = env.get_template(TEMPLATE_NAME)
     html = template.render(**data)
-    HTML(string=html, base_url=str(TEMPLATE_DIR)).write_pdf(output_path)
+    return HTML(string=html, base_url=str(TEMPLATE_DIR)).write_pdf()
+
+
+def render_pdf(data, output_path):
+    with open(output_path, "wb") as f:
+        f.write(render_pdf_bytes(data))
+
+
+def combine_pdfs(pdf_bytes_list, output_path):
+    writer = PdfWriter()
+    for pdf_bytes in pdf_bytes_list:
+        writer.append(PdfReader(io.BytesIO(pdf_bytes)))
+    with open(output_path, "wb") as f:
+        writer.write(f)
 
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("yaml_file", type=pathlib.Path, help="YAML file describing the title page")
+    parser.add_argument("yaml_file", type=pathlib.Path, help="YAML file describing one or more title pages")
     parser.add_argument("-o", "--output", type=pathlib.Path, help="output PDF path (default: <title>.pdf)")
+    parser.add_argument(
+        "--multifile",
+        action="store_true",
+        help="for a YAML list of specs, write one PDF per entry instead of combining into one",
+    )
     args = parser.parse_args()
 
-    data = load_data(args.yaml_file)
-    output_path = resolve_output_path(data, args.output)
+    if args.multifile and args.output:
+        parser.error("-o cannot be used with --multifile")
 
-    render_pdf(data, output_path)
-    print(f"wrote {output_path}")
+    specs = load_specs(args.yaml_file)
+
+    if len(specs) == 1:
+        output_path = resolve_output_path(specs[0], args.output)
+        render_pdf(specs[0], output_path)
+        print(f"wrote {output_path}")
+    elif args.multifile:
+        for spec in specs:
+            output_path = resolve_output_path(spec, None)
+            render_pdf(spec, output_path)
+            print(f"wrote {output_path}")
+    else:
+        output_path = args.output or pathlib.Path(DEFAULT_MULTI_SPEC_OUTPUT)
+        combine_pdfs([render_pdf_bytes(spec) for spec in specs], output_path)
+        print(f"wrote {output_path}")
 
 
 if __name__ == "__main__":
