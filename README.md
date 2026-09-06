@@ -62,7 +62,7 @@ tests for every small formatting change.
 	* by default, output to one pdf per entry (in this case, the `-o` file dictates the name of the single output file)
 	* if `--multifile` flag passed, output each item to its own pdf file (`-o` is invalid with `--multifile` and a file contain multiple specs and should result in an error)
 	* if a yaml file has a single item in it, keep current behavior
-[] centered single-text
+[x] centered single-text
 	* for an item with only `text` and no `translation`, the  box containing that text should be horizontally centered in the page (the attribution, if any, remains right-justified within the box)
 [] line continuations
 	* line continuations in a text or translation should have a hanging indent on all lines besides the first
