@@ -92,6 +92,11 @@
     text-align: left;
     font-size: 11.5pt;
     line-height: 1.4;
+    /* .page centers flex items using their full margin box, which would
+       double up with the explicit margin-left below (computed to center
+       this row itself); pin this item to the flex start so only that
+       explicit margin positions it. */
+    align-self: flex-start;
   }
 
   .col-frame {
@@ -203,7 +208,7 @@
     {% endmacro %}
 
     {% if text and translation %}
-    <div class="text-row correlated">
+    <div class="text-row correlated" style="grid-template-columns: {{ box_width_in }}in {{ box_width_in }}in; column-gap: {{ column_gap_in }}in; width: {{ row_width_in }}in; margin: 0.75in 0 0 {{ row_margin_left_in }}in;">
       <div class="col-frame left{% if not correlated.box %} no-box{% endif %}" style="grid-row: {{ correlated.frame_first_row }} / {{ correlated.frame_last_row + 1 }};"></div>
       <div class="col-frame right{% if not correlated.box %} no-box{% endif %}" style="grid-row: {{ correlated.frame_first_row }} / {{ correlated.frame_last_row + 1 }};"></div>
       {% for row in correlated.rows %}

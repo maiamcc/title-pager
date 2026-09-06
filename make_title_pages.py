@@ -24,6 +24,62 @@ COLOR_OK = "\033[32m"
 COLOR_ERROR = "\033[31m"
 COLOR_RESET = "\033[0m"
 
+# Must stay in sync with the corresponding values in template.html's CSS.
+BOX_FONT_SIZE_PT = 11.5
+BOX_PADDING_IN = 0.25
+DEFAULT_COLUMN_GAP_IN = 0.6
+DEFAULT_PAGE_MARGIN_SIDE_IN = 1.0
+INDENT_EM = 3
+SPLIT_GAP_EM = 1
+
+# How far the correlated boxes are allowed to squeeze the gap between them
+# and encroach into the normal page margin -- but only when doing so would
+# actually eliminate a line break that the default spacing would otherwise
+# force. When default spacing already fits, or squeezing all the way to
+# these floors still wouldn't be enough, the defaults above are used as-is.
+MIN_COLUMN_GAP_IN = 0.3
+MIN_PAGE_MARGIN_SIDE_IN = 0.55
+
+PAGE_WIDTHS_IN = {
+    "letter": 8.5,
+    "legal": 8.5,
+    "tabloid": 11,
+    "ledger": 17,
+    "a3": 297 / 25.4,
+    "a4": 210 / 25.4,
+    "a5": 148 / 25.4,
+}
+
+FONT_CANDIDATES = (
+    pathlib.Path.home() / "Library" / "Fonts" / "Minion Pro Regular.ttf",
+    pathlib.Path("/Library/Fonts/Minion Pro Regular.ttf"),
+)
+
+AVERAGE_CHAR_WIDTH_EM = 0.5
+MEASUREMENT_SAFETY_MARGIN = 1.03
+
+_font_metrics_cache = {}
+
+
+def _load_font_metrics():
+    if "metrics" in _font_metrics_cache:
+        return _font_metrics_cache["metrics"]
+
+    metrics = None
+    for path in FONT_CANDIDATES:
+        if path.exists():
+            try:
+                from fontTools.ttLib import TTFont
+
+                font = TTFont(str(path))
+                metrics = (font.getBestCmap(), font["hmtx"], font["head"].unitsPerEm)
+            except Exception:
+                metrics = None
+            break
+
+    _font_metrics_cache["metrics"] = metrics
+    return metrics
+
 
 def log(message):
     print(message)
@@ -44,6 +100,132 @@ def ok(message):
 def slugify(text):
     slug = re.sub(r"[^\w\s-]", "", text).strip().lower()
     return re.sub(r"[\s_]+", "-", slug) or "title-page"
+
+
+def measure_text_width_in(text, font_size_pt=BOX_FONT_SIZE_PT):
+    if not text:
+        return 0.0
+
+    metrics = _load_font_metrics()
+    if metrics is None:
+        raw_in = len(text) * AVERAGE_CHAR_WIDTH_EM * font_size_pt / 72
+    else:
+        cmap, hmtx, units_per_em = metrics
+        total_units = 0
+        for ch in text:
+            glyph_name = cmap.get(ord(ch))
+            try:
+                total_units += hmtx[glyph_name][0] if glyph_name else units_per_em * AVERAGE_CHAR_WIDTH_EM
+            except KeyError:
+                total_units += units_per_em * AVERAGE_CHAR_WIDTH_EM
+        raw_in = total_units / units_per_em * font_size_pt / 72
+
+    # Glyph advance widths are summed without kerning/shaping, which
+    # WeasyPrint's real (Pango-based) text layout does apply -- a small
+    # safety margin keeps borderline lines from wrapping by a hair after
+    # sizing the box to this estimate.
+    return raw_in * MEASUREMENT_SAFETY_MARGIN
+
+
+def strip_markdown_for_measurement(text):
+    text = re.sub(r"\*\*(.+?)\*\*", r"\1", text)
+    text = re.sub(r"\*(.+?)\*", r"\1", text)
+    text = re.sub(r"_(.+?)_", r"\1", text)
+    return text
+
+
+def measure_line_width_in(line):
+    indented = line.startswith("  ")
+    if indented:
+        line = line.lstrip(" ")
+
+    if "\t" in line:
+        left, right = line.split("\t", 1)
+        width = measure_text_width_in(strip_markdown_for_measurement(left)) + measure_text_width_in(
+            strip_markdown_for_measurement(right)
+        )
+        width += SPLIT_GAP_EM * BOX_FONT_SIZE_PT / 72
+    else:
+        width = measure_text_width_in(strip_markdown_for_measurement(line))
+
+    if indented:
+        width += INDENT_EM * BOX_FONT_SIZE_PT / 72
+
+    return width
+
+
+def compute_ideal_content_width_in(text):
+    widths = [0.0]
+    for stanza in text.get("stanzas") or []:
+        for line in stanza.get("lines") or []:
+            widths.append(measure_line_width_in(line))
+        for line in stanza.get("translation_lines") or []:
+            widths.append(measure_line_width_in(line))
+
+    if text.get("attribution"):
+        widths.append(measure_text_width_in(f'— {text["attribution"]}'))
+
+    return max(widths)
+
+
+def compute_correlated_layout(text, page_size):
+    """Compute the box width, column gap, and row width for the two
+    correlated (text + translation) boxes.
+
+    Boxes normally flex up to a cap based on the default margin and gap.
+    If content would still wrap even at that cap, the margin and gap are
+    squeezed together (in proportion to their own squeezable range) just
+    far enough to fit -- but only that far, and only when it actually
+    eliminates the wrap. If even the minimum margin/gap wouldn't fit the
+    content, the defaults are used as-is (a wrap that can't be avoided
+    isn't worth cramping every page for).
+    """
+    ideal_box_in = compute_ideal_content_width_in(text) + 2 * BOX_PADDING_IN
+    page_width_in = PAGE_WIDTHS_IN.get((page_size or "letter").lower(), PAGE_WIDTHS_IN["letter"])
+
+    default_cap_in = (page_width_in - 2 * DEFAULT_PAGE_MARGIN_SIDE_IN - DEFAULT_COLUMN_GAP_IN) / 2
+
+    if ideal_box_in <= default_cap_in:
+        gap_in = DEFAULT_COLUMN_GAP_IN
+        box_width_in = ideal_box_in
+    else:
+        # Total extra width buyable by squeezing margin (both sides) and
+        # gap down to their floors together.
+        squeeze_range_in = (
+            2 * (DEFAULT_PAGE_MARGIN_SIDE_IN - MIN_PAGE_MARGIN_SIDE_IN)
+            + (DEFAULT_COLUMN_GAP_IN - MIN_COLUMN_GAP_IN)
+        ) / 2
+        max_cap_in = default_cap_in + squeeze_range_in
+
+        if ideal_box_in > max_cap_in:
+            gap_in = DEFAULT_COLUMN_GAP_IN
+            box_width_in = default_cap_in
+        else:
+            # Squeeze margin and gap together, proportionally to their own
+            # squeezable range, just far enough to fit the content exactly.
+            t = (ideal_box_in - default_cap_in) / squeeze_range_in
+            gap_in = DEFAULT_COLUMN_GAP_IN - t * (DEFAULT_COLUMN_GAP_IN - MIN_COLUMN_GAP_IN)
+            box_width_in = ideal_box_in
+
+    box_width_in = round(box_width_in, 3)
+    gap_in = round(gap_in, 3)
+    row_width_in = round(2 * box_width_in + gap_in, 3)
+
+    # WeasyPrint's grid layout doesn't resolve margin:auto correctly when
+    # the grid is wider than its containing block (confirmed by direct
+    # testing -- it collapses to flush-left instead of centering), so the
+    # left offset needed to keep the row centered on the *default*
+    # printable area (even when squeezed wider than it) is computed here
+    # and applied as an explicit margin-left instead of auto.
+    printable_width_in = page_width_in - 2 * DEFAULT_PAGE_MARGIN_SIDE_IN
+    row_margin_left_in = round((printable_width_in - row_width_in) / 2, 3)
+
+    return {
+        "box_width_in": box_width_in,
+        "column_gap_in": gap_in,
+        "row_width_in": row_width_in,
+        "row_margin_left_in": row_margin_left_in,
+    }
 
 
 def markdown_lite(text):
@@ -201,6 +383,7 @@ def render_html(data):
     context = {**data, "translation": translation}
     if text and translation:
         context["correlated"] = build_correlated_rows(text)
+        context.update(compute_correlated_layout(text, data.get("page_size")))
     return template.render(**context)
 
 

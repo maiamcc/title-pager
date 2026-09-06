@@ -1,4 +1,5 @@
 import pathlib
+import re
 
 import pytest
 
@@ -287,6 +288,86 @@ def test_render_html_boxes_end_at_same_row_despite_attribution(tmp_path):
     assert 'class="col-frame right" style="grid-row: 1 / 3;"' in html
 
 
+def test_render_html_row_width_matches_columns_plus_gap(tmp_path):
+    path = write_yaml(
+        tmp_path,
+        """
+        title: Foo
+        composer: Bar
+        text:
+          stanzas:
+            - lines:
+                - hi
+              translation_lines:
+                - yo
+        """,
+    )
+    data = make_title_pages.load_data(path)
+    html = make_title_pages.render_html(data)
+
+    box_match = re.search(r"grid-template-columns: ([\d.]+)in", html)
+    row_match = re.search(r'style="[^"]*width: ([\d.]+)in; margin: 0\.75in 0 0 [\d.-]+in;"', html)
+    assert box_match and row_match
+    box_width = float(box_match.group(1))
+    row_width = float(row_match.group(1))
+    assert row_width == round(2 * box_width + make_title_pages.DEFAULT_COLUMN_GAP_IN, 3)
+
+
+def test_render_html_correlated_row_uses_explicit_margin_left_not_auto(tmp_path):
+    # WeasyPrint doesn't resolve margin:auto correctly for a grid wider
+    # than its containing block (confirmed by direct testing -- it
+    # collapses to flush-left), so centering must come from an explicit,
+    # Python-computed margin-left rather than auto.
+    path = write_yaml(
+        tmp_path,
+        """
+        title: Foo
+        composer: Bar
+        text:
+          stanzas:
+            - lines:
+                - hi
+              translation_lines:
+                - yo
+        """,
+    )
+    data = make_title_pages.load_data(path)
+    html = make_title_pages.render_html(data)
+    assert "margin: 0.75in auto 0;" not in html
+    assert re.search(r"margin: 0\.75in 0 0 [\d.-]+in;", html)
+
+    correlated_rule = re.search(r"\.text-row\.correlated\s*\{([^}]*)\}", html)
+    assert correlated_rule is not None
+    assert "justify-content" not in correlated_rule.group(1)
+
+
+def test_compute_correlated_layout_row_margin_left_centers_normal_case():
+    text = {"stanzas": [{"lines": ["hi"], "translation_lines": ["yo"]}]}
+    layout = make_title_pages.compute_correlated_layout(text, "letter")
+    printable_width = 8.5 - 2 * make_title_pages.DEFAULT_PAGE_MARGIN_SIDE_IN
+    expected = round((printable_width - layout["row_width_in"]) / 2, 3)
+    assert layout["row_margin_left_in"] == expected
+    assert layout["row_margin_left_in"] > 0  # narrower than printable area, positive offset
+
+
+def test_compute_correlated_layout_row_margin_left_centers_squeezed_case():
+    # This is the real line from fixtures/correlated_stanzas.yaml that
+    # needs the margin/gap squeeze -- its row ends up wider than the
+    # default printable area, so the centering offset goes negative.
+    line = "And blessed is the fruit of thy womb, Jesus."
+    text = {"stanzas": [{"lines": [line], "translation_lines": [line]}]}
+    layout = make_title_pages.compute_correlated_layout(text, "letter")
+    printable_width = 8.5 - 2 * make_title_pages.DEFAULT_PAGE_MARGIN_SIDE_IN
+    assert layout["row_width_in"] > printable_width  # confirms this is the overflow case
+    expected = round((printable_width - layout["row_width_in"]) / 2, 3)
+    assert layout["row_margin_left_in"] == expected
+    assert layout["row_margin_left_in"] < 0
+    # Symmetry: the row's own center should land on the printable area's
+    # center regardless of how wide the row itself is.
+    row_center = layout["row_margin_left_in"] + layout["row_width_in"] / 2
+    assert round(row_center, 3) == round(printable_width / 2, 3)
+
+
 def test_build_correlated_rows_attribution_is_html_escaped():
     text = {
         "stanzas": [{"lines": ["one"], "translation_lines": ["uno"]}],
@@ -323,6 +404,124 @@ def test_render_html_spillover_keeps_subsequent_rows_aligned(tmp_path):
     assert 'grid-row: 1 / 3;' in html
     assert 'style="grid-row: 1;"' in html
     assert 'style="grid-row: 2;"' in html
+
+
+def test_measure_text_width_in_empty_is_zero():
+    assert make_title_pages.measure_text_width_in("") == 0.0
+
+
+def test_measure_text_width_in_longer_text_is_wider():
+    short = make_title_pages.measure_text_width_in("Hi")
+    long = make_title_pages.measure_text_width_in("Hello there, this is much longer")
+    assert long > short
+
+
+def test_measure_text_width_in_larger_font_is_wider():
+    small = make_title_pages.measure_text_width_in("Hello", font_size_pt=10)
+    large = make_title_pages.measure_text_width_in("Hello", font_size_pt=20)
+    assert large > small
+
+
+def test_strip_markdown_for_measurement_removes_markers():
+    assert make_title_pages.strip_markdown_for_measurement("**bold** and *italic* and _also_") == (
+        "bold and italic and also"
+    )
+
+
+def test_measure_line_width_in_indent_adds_width():
+    plain = make_title_pages.measure_line_width_in("hello world")
+    indented = make_title_pages.measure_line_width_in("  hello world")
+    assert indented > plain
+
+
+def test_measure_line_width_in_tab_split_sums_both_sides():
+    combined = make_title_pages.measure_line_width_in("left part\tright part")
+    left_only = make_title_pages.measure_text_width_in("left part")
+    right_only = make_title_pages.measure_text_width_in("right part")
+    assert combined > left_only + right_only  # includes the gap too
+
+
+def test_compute_ideal_content_width_in_uses_widest_line():
+    text = {
+        "stanzas": [
+            {"lines": ["short"], "translation_lines": ["a much much longer translated line here"]}
+        ]
+    }
+    ideal = make_title_pages.compute_ideal_content_width_in(text)
+    assert ideal == make_title_pages.measure_line_width_in(
+        "a much much longer translated line here"
+    )
+
+
+def test_compute_ideal_content_width_in_considers_attribution():
+    text = {"stanzas": [{"lines": ["hi"], "translation_lines": ["yo"]}], "attribution": "A" * 200}
+    ideal = make_title_pages.compute_ideal_content_width_in(text)
+    assert ideal > make_title_pages.measure_line_width_in("hi")
+
+
+def test_compute_correlated_layout_short_content_is_narrower_than_cap_and_uses_default_gap():
+    text = {"stanzas": [{"lines": ["hi"], "translation_lines": ["yo"]}]}
+    layout = make_title_pages.compute_correlated_layout(text, "letter")
+    available = (
+        8.5
+        - 2 * make_title_pages.DEFAULT_PAGE_MARGIN_SIDE_IN
+        - make_title_pages.DEFAULT_COLUMN_GAP_IN
+    )
+    assert layout["box_width_in"] < available / 2
+    assert layout["column_gap_in"] == make_title_pages.DEFAULT_COLUMN_GAP_IN
+
+
+def test_compute_correlated_layout_extreme_content_falls_back_to_defaults():
+    # So long that even squeezing margin and gap to their floors wouldn't
+    # help -- squeezing shouldn't be applied since it wouldn't eliminate
+    # the wrap anyway.
+    long_line = "word " * 200
+    text = {"stanzas": [{"lines": [long_line], "translation_lines": [long_line]}]}
+    layout = make_title_pages.compute_correlated_layout(text, "letter")
+    default_available = (
+        8.5
+        - 2 * make_title_pages.DEFAULT_PAGE_MARGIN_SIDE_IN
+        - make_title_pages.DEFAULT_COLUMN_GAP_IN
+    )
+    assert layout["box_width_in"] == round(default_available / 2, 3)
+    assert layout["column_gap_in"] == make_title_pages.DEFAULT_COLUMN_GAP_IN
+
+
+def test_compute_correlated_layout_squeezes_gap_when_it_eliminates_a_wrap():
+    # Long enough to exceed the default cap, but short enough that
+    # squeezing margin+gap to their floors covers the difference (this is
+    # the actual line from fixtures/correlated_stanzas.yaml that first
+    # revealed the need for this behavior).
+    line = "And blessed is the fruit of thy womb, Jesus."
+    text = {"stanzas": [{"lines": [line], "translation_lines": [line]}]}
+    default_available = (
+        8.5
+        - 2 * make_title_pages.DEFAULT_PAGE_MARGIN_SIDE_IN
+        - make_title_pages.DEFAULT_COLUMN_GAP_IN
+    )
+    default_cap = default_available / 2
+    ideal = make_title_pages.compute_ideal_content_width_in(text) + 2 * make_title_pages.BOX_PADDING_IN
+    assert ideal > default_cap  # sanity check this line actually needs the squeeze
+
+    layout = make_title_pages.compute_correlated_layout(text, "letter")
+    assert layout["box_width_in"] > default_cap
+    assert layout["box_width_in"] == round(ideal, 3)
+    assert layout["column_gap_in"] < make_title_pages.DEFAULT_COLUMN_GAP_IN
+    assert layout["column_gap_in"] >= make_title_pages.MIN_COLUMN_GAP_IN
+
+
+def test_compute_correlated_layout_row_width_matches_columns_plus_gap():
+    text = {"stanzas": [{"lines": ["hi"], "translation_lines": ["yo"]}]}
+    layout = make_title_pages.compute_correlated_layout(text, "letter")
+    assert layout["row_width_in"] == round(2 * layout["box_width_in"] + layout["column_gap_in"], 3)
+
+
+def test_compute_correlated_layout_uses_page_size(tmp_path):
+    text = {"stanzas": [{"lines": ["hi " * 5], "translation_lines": ["yo " * 5]}]}
+    letter_width = make_title_pages.compute_correlated_layout(text, "letter")["box_width_in"]
+    a4_width = make_title_pages.compute_correlated_layout(text, "a4")["box_width_in"]
+    # a4 is narrower than letter, so its cap (if binding) is smaller or equal
+    assert a4_width <= letter_width
 
 
 def test_load_data_text_without_translation_is_fine(tmp_path):
