@@ -1,0 +1,13 @@
+title: No Box Demo
+composer: Test Composer
+text:
+  box: false
+  stanzas:
+    - lines:
+        - This text has no border box around it.
+        - It should still be positioned and spaced normally.
+translation:
+  stanzas:
+    - lines:
+        - This translation keeps its default box.
+        - So you can compare the two side by side.

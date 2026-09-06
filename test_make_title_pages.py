@@ -247,6 +247,63 @@ def test_render_html_escapes_other_fields(tmp_path):
     assert "Foo &amp; Bar" in html
 
 
+def test_render_html_box_defaults_to_shown(tmp_path):
+    path = write_yaml(
+        tmp_path,
+        """
+        title: Foo
+        composer: Bar
+        text:
+          stanzas:
+            - lines:
+                - Hello
+        """,
+    )
+    data = make_title_pages.load_data(path)
+    html = make_title_pages.render_html(data)
+    assert 'class="text-box no-box"' not in html
+
+
+def test_render_html_box_false_omits_border(tmp_path):
+    path = write_yaml(
+        tmp_path,
+        """
+        title: Foo
+        composer: Bar
+        text:
+          box: false
+          stanzas:
+            - lines:
+                - Hello
+        """,
+    )
+    data = make_title_pages.load_data(path)
+    html = make_title_pages.render_html(data)
+    assert 'class="text-box no-box"' in html
+
+
+def test_render_html_box_is_independent_per_block(tmp_path):
+    path = write_yaml(
+        tmp_path,
+        """
+        title: Foo
+        composer: Bar
+        text:
+          box: false
+          stanzas:
+            - lines:
+                - Hello
+        translation:
+          stanzas:
+            - lines:
+                - World
+        """,
+    )
+    data = make_title_pages.load_data(path)
+    html = make_title_pages.render_html(data)
+    assert html.count('class="text-box no-box"') == 1
+
+
 def test_combine_pdfs_concatenates_pages(tmp_path):
     data_a = {"title": "First Piece", "composer": "A"}
     data_b = {"title": "Second Piece", "composer": "B"}
