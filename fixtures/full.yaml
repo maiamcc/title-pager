@@ -1,0 +1,24 @@
+title: Virga Jesse
+composer: Anton Bruckner
+composer_dates: "1824–1896"
+subtitle: WAB 52 (1885)
+dedication: for the dedication of the new Votive Chapel of Linz Cathedral
+text:
+  stanzas:
+    - lines:
+        - "Virga Jesse floruit:"
+        - "Virgo Deum et hominem genuit:"
+        - pacem Deus reddidit,
+        - in se reconcilians
+        - "   ima summis."
+        - Alleluja.
+  attribution: Gradual for the Feast of the Immaculate Conception
+translation:
+  stanzas:
+    - lines:
+        - "The rod of Jesse hath blossomed:"
+        - "a Virgin hath brought forth God and man:"
+        - God hath restored peace,
+        - reconciling in Himself
+        - "   the lowest with the highest."
+        - Alleluia.

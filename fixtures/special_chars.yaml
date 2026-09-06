@@ -1,0 +1,20 @@
+title: "Ave Maria: gratia plena"
+composer: Franz Biebl
+composer_dates: "1906–2001"
+subtitle: "for double choir & soli"
+dedication: "in memoriam: the Regensburger Domspatzen"
+text:
+  stanzas:
+    - lines:
+        - "Ave Maria, gratia plena:"
+        - "Dominus tecum."
+        - "Benedicta tu in mulieribus,"
+        - "et benedictus fructus ventris tui, Jesus."
+  attribution: "Angelus Domini, arr. F. Biebl"
+translation:
+  stanzas:
+    - lines:
+        - "Hail Mary, full of grace:"
+        - "the Lord is with thee."
+        - "Blessed art thou amongst women,"
+        - "and blessed is the fruit of thy womb, Jesus."

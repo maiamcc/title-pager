@@ -1,0 +1,15 @@
+title: A Very Long Title That Might Need To Wrap Onto A Second Line Entirely
+composer: Someone With A Rather Extensive Full Name Indeed
+composer_dates: "1700–1780"
+subtitle: for the wrapping behavior of the subtitle line as well, in theory
+text:
+  stanzas:
+    - lines:
+        - This is a single line of text that is long enough to force the box to wrap it onto at least two, and possibly three, visual lines.
+        - A short line.
+  attribution: A very long attribution string that also ought to wrap rather than run off the edge of the page entirely
+translation:
+  stanzas:
+    - lines:
+        - This is the corresponding translation line, also written to be long enough that it should wrap inside its box just like the original text does.
+        - A short line.

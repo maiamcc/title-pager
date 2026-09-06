@@ -28,6 +28,9 @@ def load_data(yaml_path):
     if missing:
         sys.exit(f"error: missing required field(s) in {yaml_path}: {', '.join(missing)}")
 
+    if data.get("translation") and not data.get("text"):
+        raise NotImplementedError("translation without text is not supported")
+
     return data
 
 
