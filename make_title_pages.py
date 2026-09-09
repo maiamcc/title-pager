@@ -292,7 +292,7 @@ def build_translation_block(text):
 
 def build_correlated_rows(text):
     rows = []
-    for stanza in text.get("stanzas") or []:
+    for stanza_index, stanza in enumerate(text.get("stanzas") or []):
         lines = stanza.get("lines") or []
         translation_lines = stanza.get("translation_lines")
         row_count = max(len(lines), len(translation_lines or []))
@@ -305,7 +305,10 @@ def build_correlated_rows(text):
                         if translation_lines is not None and i < len(translation_lines)
                         else None
                     ),
-                    "stanza_start": i == 0,
+                    # Mirrors the single-box layout's `.stanza + .stanza`
+                    # sibling selector, which only adds a gap *between*
+                    # stanzas -- not above the first one.
+                    "stanza_start": i == 0 and stanza_index > 0,
                 }
             )
 

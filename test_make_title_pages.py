@@ -206,7 +206,10 @@ def test_build_correlated_rows_marks_stanza_starts():
         ]
     }
     result = make_title_pages.build_correlated_rows(text)
-    assert [r["stanza_start"] for r in result["rows"]] == [True, False, True]
+    # The first stanza's first row is NOT a "stanza start" gap -- only a
+    # later stanza's first row gets the gap, mirroring the single-box
+    # layout's `.stanza + .stanza` sibling selector.
+    assert [r["stanza_start"] for r in result["rows"]] == [False, False, True]
 
 
 def test_build_correlated_rows_mismatched_lengths_leave_gaps():
