@@ -185,12 +185,12 @@
     </div>
 
     <div class="title-block">
-      <p class="title">{{ title }}</p>
-      {% if subtitle %}<p class="subtitle">{{ subtitle }}</p>{% endif %}
+      <p class="title">{{ title | markdown_lite }}</p>
+      {% if subtitle %}<p class="subtitle">{{ subtitle | markdown_lite }}</p>{% endif %}
     </div>
 
     {% if dedication %}
-    <div class="dedication">{{ dedication }}</div>
+    <div class="dedication">{{ dedication | markdown_lite }}</div>
     {% endif %}
 
     {% macro text_box(block) %}

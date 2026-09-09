@@ -12,8 +12,9 @@
   composer: Traditional
   metadata: >-
     Single centered box (no translation): multiple stanzas (stanza-gap in
-    the single-box layout), a dedication, and an attribution.
-  dedication: for young stargazers everywhere
+    the single-box layout), a dedication, and an attribution. Also exercises
+    markdown in the dedication (title/subtitle/dedication all support it).
+  dedication: for **bold young stargazers** everywhere
   text:
     stanzas:
       - lines:
