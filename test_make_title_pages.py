@@ -654,6 +654,14 @@ def test_markdown_lite(text, expected):
     assert make_title_pages.markdown_lite(text) == expected
 
 
+def test_title_text_converts_literal_newline_to_br():
+    assert make_title_pages.title_text("Line One\nLine Two") == "Line One<br>Line Two"
+
+
+def test_title_text_still_applies_markdown_and_escaping():
+    assert make_title_pages.title_text("**Bold**\nBen & Jerry's") == "<strong>Bold</strong><br>Ben &amp; Jerry&#x27;s"
+
+
 def test_render_line_without_tab():
     assert make_title_pages.render_line("plain text") == '<p class="line">plain text</p>'
 
@@ -824,6 +832,19 @@ def test_compute_title_width_in_extreme_title_falls_back_to_none():
     # squeezing shouldn't be applied since it wouldn't eliminate the wrap.
     title = "word " * 60
     assert make_title_pages.compute_title_width_in(title, "letter") is None
+
+
+def test_compute_title_width_in_considers_only_widest_manual_line():
+    # A manually broken title shouldn't be measured as one long concatenated
+    # line -- the squeeze decision should be based on its widest individual
+    # line, same as if that line were the whole (single-line) title.
+    wide_line = "Fain Would I Change That Note"  # needs the squeeze on its own
+    short_line = "Short"
+    solo_width = make_title_pages.compute_title_width_in(wide_line, "letter")
+    assert solo_width is not None
+
+    combined_width = make_title_pages.compute_title_width_in(f"{short_line}\n{wide_line}", "letter")
+    assert combined_width == solo_width
 
 
 def test_compute_title_width_in_strips_markdown_before_measuring():

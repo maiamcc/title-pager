@@ -185,8 +185,8 @@
     </div>
 
     <div class="title-block"{% if title_block_width_in %} style="width: {{ title_block_width_in }}in;"{% endif %}>
-      <p class="title">{{ title | markdown_lite }}</p>
-      {% if subtitle %}<p class="subtitle">{{ subtitle | markdown_lite }}</p>{% endif %}
+      <p class="title">{{ title | title_text }}</p>
+      {% if subtitle %}<p class="subtitle">{{ subtitle | title_text }}</p>{% endif %}
     </div>
 
     {% if dedication %}

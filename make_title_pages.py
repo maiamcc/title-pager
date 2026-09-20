@@ -244,8 +244,13 @@ def compute_title_width_in(title, page_size):
     then renders that wide and .page's flex centering keeps it centered,
     bleeding evenly into the margin. Returns None when the default margins
     already fit the title, or when even the minimum margin wouldn't help
-    (a wrap that can't be avoided isn't worth cramping the page for)."""
-    ideal_in = measure_text_width_in(strip_markdown_for_measurement(title), font_size_pt=TITLE_FONT_SIZE_PT, bold=True)
+    (a wrap that can't be avoided isn't worth cramping the page for). A
+    manual \\n line break in the title is honored as-is -- only the widest
+    of its resulting lines is considered for the squeeze."""
+    ideal_in = max(
+        measure_text_width_in(strip_markdown_for_measurement(line), font_size_pt=TITLE_FONT_SIZE_PT, bold=True)
+        for line in title.split("\n")
+    )
 
     page_width_in = PAGE_WIDTHS_IN.get((page_size or "letter").lower(), PAGE_WIDTHS_IN["letter"])
     default_width_in = page_width_in - 2 * DEFAULT_PAGE_MARGIN_SIDE_IN
@@ -265,6 +270,13 @@ def markdown_lite(text):
     escaped = re.sub(r"\*(.+?)\*", r"<em>\1</em>", escaped)
     escaped = re.sub(r"_(.+?)_", r"<em>\1</em>", escaped)
     return Markup(escaped)
+
+
+def title_text(text):
+    """Like markdown_lite, but also honors a literal \\n as a forced line
+    break -- used for title/subtitle, which (unlike stanza lines) aren't
+    already broken into a list of lines."""
+    return Markup(str(markdown_lite(text)).replace("\n", "<br>"))
 
 
 def render_line(line):
@@ -410,6 +422,7 @@ def resolve_output_path(data, cli_output):
 def render_html(data):
     env = Environment(loader=FileSystemLoader(str(TEMPLATE_DIR)), autoescape=True)
     env.filters["markdown_lite"] = markdown_lite
+    env.filters["title_text"] = title_text
     env.filters["render_line"] = render_line
     template = env.get_template(TEMPLATE_NAME)
     text = data.get("text")

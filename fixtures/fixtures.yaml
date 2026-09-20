@@ -80,6 +80,13 @@
           - Long, long to sing by rote,
           - Fancying that that harmed me.
 
+- title: "A Title\nWith a Forced Break"
+  composer: Test Composer
+  subtitle: "A Subtitle\nAlso Broken Manually"
+  metadata: >-
+    A literal \n in the title/subtitle forces a line break there, independent
+    of (and not measured by) the auto-wrap/title-margin-squeeze logic above.
+
 - title: Virga Jesse
   composer: Anton Bruckner
   metadata: >-
