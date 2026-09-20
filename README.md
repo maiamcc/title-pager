@@ -31,6 +31,41 @@ least one stanza has `translation_lines`.
 
 Omit `-o` and the output filename is derived from the title.
 
+`composer_dates` is meant to hold an en dash (`–`), e.g. `"1872–1958"`; a
+plain hyphen there prints a warning as a likely typo.
+
+## Text formatting
+
+These conventions apply within string values (`title`, `subtitle`,
+`dedication`, and stanza `lines`/`translation_lines`, except where noted).
+Several rely on an escape sequence (`\n`, `\t`) that YAML only interprets
+inside a **double-quoted** string — a plain or single-quoted scalar keeps
+those as literal backslash-n/backslash-t, not the special character.
+
+* **`**bold**`, `*italic*` / `_italic_`** — markdown-lite emphasis.
+  Supported in `title`, `subtitle`, `dedication`, and stanza
+  `lines`/`translation_lines`. Not supported in `attribution`.
+* **`\n`** — forces a line break. Only meaningful in `title` and
+  `subtitle` (stanza lines are already a YAML list, one line each, so they
+  don't need it). Example: `title: "Now Is the Month\nof Maying"`.
+* **`\t`** — splits a single stanza line into a left-aligned and a
+  right-aligned span (e.g. original-language text paired with a bracketed
+  gloss on the same line). Example:
+  `"Virga Jesse floruit:\t[The rod of Jesse hath blossomed:]"`.
+* **Leading two spaces** (`"  like this"`) — indents that line (a hanging
+  indent relative to the rest of the stanza), for things like a refrain or
+  a sub-line of the line above it. A single leading space is not enough to
+  trigger it.
+
+The title and the two-column text/translation boxes also auto-flex to
+avoid unnecessary line wraps: if a title or a box's content would wrap at
+the default page margins but a small margin squeeze would let it fit on
+one line, the margins narrow just enough to do that (falling back to the
+default margins, wrap and all, if even the minimum margin wouldn't help).
+This is automatic and doesn't need any special syntax — see the
+`title-margin-squeeze` and width-flex cases in
+[fixtures/fixtures.yaml](fixtures/fixtures.yaml) for examples.
+
 ## Testing
 
 Unit tests (fast, no PDF rendering):
