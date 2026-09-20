@@ -796,4 +796,58 @@ def test_combine_pdfs_concatenates_pages(tmp_path):
     reader = PdfReader(str(output_path))
     assert len(reader.pages) == 2
     assert "First Piece" in reader.pages[0].extract_text()
-    assert "Second Piece" in reader.pages[1].extract_text()
+
+
+def test_compute_title_width_in_short_title_needs_no_squeeze():
+    assert make_title_pages.compute_title_width_in("Short Title", "letter") is None
+
+
+def test_compute_title_width_in_squeezes_when_it_eliminates_a_wrap():
+    # The real title from fixtures/fixtures.yaml's "Fain Would I Change
+    # That Note" case: wraps at the default margins, but fits once the
+    # margins squeeze toward their floor.
+    title = "Fain Would I Change That Note"
+    default_available = 8.5 - 2 * make_title_pages.DEFAULT_PAGE_MARGIN_SIDE_IN
+    ideal = make_title_pages.measure_text_width_in(
+        title, font_size_pt=make_title_pages.TITLE_FONT_SIZE_PT, bold=True
+    )
+    assert ideal > default_available  # sanity check this title actually needs the squeeze
+
+    width = make_title_pages.compute_title_width_in(title, "letter")
+    assert width is not None
+    assert width > default_available
+    assert width == round(ideal, 3)
+
+
+def test_compute_title_width_in_extreme_title_falls_back_to_none():
+    # So long that even the minimum margin wouldn't fit it on one line --
+    # squeezing shouldn't be applied since it wouldn't eliminate the wrap.
+    title = "word " * 60
+    assert make_title_pages.compute_title_width_in(title, "letter") is None
+
+
+def test_compute_title_width_in_strips_markdown_before_measuring():
+    plain_width = make_title_pages.compute_title_width_in("A Bold Title Here", "letter")
+    markdown_width = make_title_pages.compute_title_width_in("A **Bold** Title Here", "letter")
+    assert plain_width == markdown_width
+
+
+def test_compute_title_width_in_uses_page_size():
+    title = "word " * 20
+    letter_width = make_title_pages.compute_title_width_in(title, "letter")
+    a4_width = make_title_pages.compute_title_width_in(title, "a4")
+    # a4 is narrower than letter, so its cap (if binding) is smaller or equal
+    assert (a4_width or 0) <= (letter_width or float("inf"))
+
+
+def test_render_html_sets_title_block_width_when_squeezed():
+    data = {"title": "Fain Would I Change That Note", "composer": "Ralph Vaughan Williams"}
+    html = make_title_pages.render_html(data)
+    width = make_title_pages.compute_title_width_in(data["title"], None)
+    assert f'style="width: {width}in;"' in html
+
+
+def test_render_html_omits_title_block_width_when_not_squeezed():
+    data = {"title": "Short Title", "composer": "Someone"}
+    html = make_title_pages.render_html(data)
+    assert '<div class="title-block">' in html

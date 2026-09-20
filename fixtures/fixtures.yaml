@@ -42,7 +42,11 @@
     tab-split (\t) + two-space manual-indent convention; stanza 2 is new,
     with a deliberately long line to exercise wrapping + hanging-indent
     within the single-box layout (no translation here -- Angelus ad
-    Virginem already covers keeping text and translation in step).
+    Virginem already covers keeping text and translation in step). Also the
+    title-margin-squeeze "can't be helped" case: even the minimum margin
+    isn't enough to fit this title on one line, so it wraps at the
+    defaults (see Fain Would I Change That Note for the squeeze-succeeds
+    case).
   text:
     stanzas:
       - lines:
@@ -58,6 +62,23 @@
       - lines:
           - Now let us sing together, both the mighty and the humble, of her whose grace and glory shine so bright that every tongue must strain itself to tell the fullness of her endless praise.
           - Amen.
+
+- title: Fain Would I Change That Note
+  composer: Ralph Vaughan Williams
+  composer_dates: "1872–1958"
+  subtitle: Canzonet for Four Voices, pub. 1907
+  metadata: >-
+    Title-margin-squeeze "succeeds" case: at the default page margins this
+    title wraps to two lines, but it fits on one line once the margins
+    squeeze down toward their floor, so it renders unwrapped and still
+    centered on the page (the real-world case that motivated the feature).
+  text:
+    stanzas:
+      - lines:
+          - Fain would I change that note
+          - To which fond love hath charmed me,
+          - Long, long to sing by rote,
+          - Fancying that that harmed me.
 
 - title: Virga Jesse
   composer: Anton Bruckner

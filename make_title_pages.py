@@ -31,6 +31,7 @@ DEFAULT_COLUMN_GAP_IN = 0.6
 DEFAULT_PAGE_MARGIN_SIDE_IN = 1.0
 INDENT_EM = 3
 SPLIT_GAP_EM = 1
+TITLE_FONT_SIZE_PT = 38
 
 # How far the correlated boxes are allowed to squeeze the gap between them
 # and encroach into the normal page margin -- but only when doing so would
@@ -55,18 +56,25 @@ FONT_CANDIDATES = (
     pathlib.Path("/Library/Fonts/Minion Pro Regular.ttf"),
 )
 
+BOLD_FONT_CANDIDATES = (
+    pathlib.Path.home() / "Library" / "Fonts" / "Minion Pro Bold.ttf",
+    pathlib.Path("/Library/Fonts/Minion Pro Bold.ttf"),
+)
+
 AVERAGE_CHAR_WIDTH_EM = 0.5
+AVERAGE_BOLD_CHAR_WIDTH_EM = 0.55
 MEASUREMENT_SAFETY_MARGIN = 1.03
 
 _font_metrics_cache = {}
 
 
-def _load_font_metrics():
-    if "metrics" in _font_metrics_cache:
-        return _font_metrics_cache["metrics"]
+def _load_font_metrics(bold=False):
+    cache_key = "bold" if bold else "metrics"
+    if cache_key in _font_metrics_cache:
+        return _font_metrics_cache[cache_key]
 
     metrics = None
-    for path in FONT_CANDIDATES:
+    for path in (BOLD_FONT_CANDIDATES if bold else FONT_CANDIDATES):
         if path.exists():
             try:
                 from fontTools.ttLib import TTFont
@@ -77,7 +85,7 @@ def _load_font_metrics():
                 metrics = None
             break
 
-    _font_metrics_cache["metrics"] = metrics
+    _font_metrics_cache[cache_key] = metrics
     return metrics
 
 
@@ -102,22 +110,23 @@ def slugify(text):
     return re.sub(r"[\s_]+", "-", slug) or "title-page"
 
 
-def measure_text_width_in(text, font_size_pt=BOX_FONT_SIZE_PT):
+def measure_text_width_in(text, font_size_pt=BOX_FONT_SIZE_PT, bold=False):
     if not text:
         return 0.0
 
-    metrics = _load_font_metrics()
+    fallback_char_width_em = AVERAGE_BOLD_CHAR_WIDTH_EM if bold else AVERAGE_CHAR_WIDTH_EM
+    metrics = _load_font_metrics(bold=bold)
     if metrics is None:
-        raw_in = len(text) * AVERAGE_CHAR_WIDTH_EM * font_size_pt / 72
+        raw_in = len(text) * fallback_char_width_em * font_size_pt / 72
     else:
         cmap, hmtx, units_per_em = metrics
         total_units = 0
         for ch in text:
             glyph_name = cmap.get(ord(ch))
             try:
-                total_units += hmtx[glyph_name][0] if glyph_name else units_per_em * AVERAGE_CHAR_WIDTH_EM
+                total_units += hmtx[glyph_name][0] if glyph_name else units_per_em * fallback_char_width_em
             except KeyError:
-                total_units += units_per_em * AVERAGE_CHAR_WIDTH_EM
+                total_units += units_per_em * fallback_char_width_em
         raw_in = total_units / units_per_em * font_size_pt / 72
 
     # Glyph advance widths are summed without kerning/shaping, which
@@ -226,6 +235,28 @@ def compute_correlated_layout(text, page_size):
         "row_width_in": row_width_in,
         "row_margin_left_in": row_margin_left_in,
     }
+
+
+def compute_title_width_in(title, page_size):
+    """If the title would wrap at the default page margins, but squeezing
+    those margins (down to the same floor the text boxes use) would fit it
+    on one line, return the exact width needed for that -- the title block
+    then renders that wide and .page's flex centering keeps it centered,
+    bleeding evenly into the margin. Returns None when the default margins
+    already fit the title, or when even the minimum margin wouldn't help
+    (a wrap that can't be avoided isn't worth cramping the page for)."""
+    ideal_in = measure_text_width_in(strip_markdown_for_measurement(title), font_size_pt=TITLE_FONT_SIZE_PT, bold=True)
+
+    page_width_in = PAGE_WIDTHS_IN.get((page_size or "letter").lower(), PAGE_WIDTHS_IN["letter"])
+    default_width_in = page_width_in - 2 * DEFAULT_PAGE_MARGIN_SIDE_IN
+    if ideal_in <= default_width_in:
+        return None
+
+    max_width_in = page_width_in - 2 * MIN_PAGE_MARGIN_SIDE_IN
+    if ideal_in > max_width_in:
+        return None
+
+    return round(ideal_in, 3)
 
 
 def markdown_lite(text):
@@ -384,6 +415,7 @@ def render_html(data):
     text = data.get("text")
     translation = build_translation_block(text)
     context = {**data, "translation": translation}
+    context["title_block_width_in"] = compute_title_width_in(data["title"], data.get("page_size"))
     if text and translation:
         context["correlated"] = build_correlated_rows(text)
         context.update(compute_correlated_layout(text, data.get("page_size")))
